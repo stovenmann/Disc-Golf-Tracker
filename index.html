@@ -1,0 +1,1564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Disc Golf Scorecard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* layout: single-column mobile app, sticky bottom tab bar, cards on a cool green-tinted paper */
+  --bg: #f4f6f3;
+  --surface: #ffffff;
+  --ink: #18231c;
+  --ink2: #55615a;
+  --muted: #8b948d;
+  --line: #e2e7e1;
+  --accent: #1e6b43;
+  --accent-ink: #ffffff;
+  --accent-soft: #e4efe8;
+  --over: #a84f24;
+  --danger: #c23b3b;
+  --chart-series: #008300;
+  --chart-grid: #e1e0d9;
+  --chart-axis: #c3c2b7;
+  --font-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --font-body: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0f1210;
+    --surface: #171c18;
+    --ink: #edf1ec;
+    --ink2: #b4bdb5;
+    --muted: #858e86;
+    --line: #262c27;
+    --accent: #45a06c;
+    --accent-ink: #0a140d;
+    --accent-soft: #1d2b22;
+    --over: #d98a5f;
+    --danger: #e06c6c;
+    --chart-series: #008300;
+    --chart-grid: #2c2c2a;
+    --chart-axis: #383835;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0f1210;
+  --surface: #171c18;
+  --ink: #edf1ec;
+  --ink2: #b4bdb5;
+  --muted: #858e86;
+  --line: #262c27;
+  --accent: #45a06c;
+  --accent-ink: #0a140d;
+  --accent-soft: #1d2b22;
+  --over: #d98a5f;
+  --danger: #e06c6c;
+  --chart-series: #008300;
+  --chart-grid: #2c2c2a;
+  --chart-axis: #383835;
+}
+
+* { box-sizing: border-box; }
+button {
+  touch-action: manipulation;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.stepbtn, .holestrip button, .parcell {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.45;
+}
+#app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  max-width: 560px;
+  margin: 0 auto;
+}
+header.topbar {
+  padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.brand {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 24px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.brand .disc { color: var(--accent); }
+.topnote { font-size: 12.5px; color: var(--muted); }
+main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2px 16px 24px;
+  -webkit-overflow-scrolling: touch;
+}
+nav.tabs {
+  display: flex;
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+nav.tabs button {
+  flex: 1;
+  background: none;
+  border: none;
+  padding: 10px 4px 12px;
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+nav.tabs button.on { color: var(--accent); }
+nav.tabs .ticon { font-size: 19px; line-height: 1; }
+.banner {
+  margin: 8px 0;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink2);
+  font-size: 13.5px;
+}
+
+h2 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin: 18px 0 8px;
+  text-wrap: balance;
+}
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px;
+  margin: 10px 0;
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 11px;
+  padding: 11px 16px;
+  cursor: pointer;
+  min-height: 44px;
+}
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.danger { color: var(--danger); }
+.btn.block { width: 100%; }
+.btn.small { min-height: 34px; padding: 5px 12px; font-size: 13.5px; border-radius: 9px; }
+a.btn { text-decoration: none; }
+.btn:focus-visible, button:focus-visible, input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.spread { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.sub { color: var(--ink2); font-size: 13.5px; }
+.tiny { color: var(--muted); font-size: 12.5px; }
+.empty {
+  text-align: center;
+  color: var(--ink2);
+  padding: 28px 12px;
+  font-size: 14.5px;
+}
+input[type="text"], input[type="number"] {
+  font-family: var(--font-body);
+  font-size: 16px;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  width: 100%;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--ink2);
+}
+.chip.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.chip .x { color: var(--muted); font-weight: 700; }
+
+/* ---- scorecard play view ---- */
+.holestrip {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 4px 2px 8px;
+  scrollbar-width: none;
+}
+.holestrip::-webkit-scrollbar { display: none; }
+.holestrip button {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink2);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+.holestrip button.cur { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.holestrip button.done { border-color: var(--accent); color: var(--accent); }
+.holehead {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 14px;
+  padding: 6px 0 2px;
+}
+.holehead .hnum {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 42px;
+  line-height: 1;
+}
+.holehead .hpar { color: var(--ink2); font-size: 16px; font-weight: 600; }
+.prow {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+.prow:first-of-type { border-top: none; }
+.pname { min-width: 0; }
+.pname .nm { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pname .thru { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.stepbtn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 24px;
+  font-weight: 600;
+  cursor: pointer;
+  line-height: 1;
+}
+.stepbtn:active { background: var(--accent-soft); }
+.scoreval {
+  width: 56px;
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 34px;
+  font-variant-numeric: tabular-nums;
+}
+.scoreval .lbl {
+  display: block;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.scoreval .lbl.good { color: var(--accent); }
+.scoreval .lbl.bad { color: var(--over); }
+.navrow { display: flex; gap: 8px; margin-top: 10px; }
+.navrow .btn { flex: 1; }
+
+/* ---- scorecard table (history detail) ---- */
+.tablewrap { overflow-x: auto; margin-top: 10px; }
+table.sc {
+  border-collapse: collapse;
+  font-size: 13.5px;
+  font-variant-numeric: tabular-nums;
+  min-width: 100%;
+}
+table.sc th, table.sc td {
+  padding: 5px 8px;
+  text-align: center;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+table.sc th { color: var(--muted); font-weight: 600; font-size: 12px; }
+table.sc td.hl { color: var(--muted); }
+table.sc tr.tot td { font-weight: 700; border-bottom: none; }
+.mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 2px;
+}
+.mark.under { border: 1.5px solid var(--accent); border-radius: 50%; color: var(--accent); font-weight: 700; }
+.mark.over { border: 1.5px solid var(--over); border-radius: 5px; color: var(--over); }
+.mark.blank { color: var(--muted); }
+
+/* ---- par editor ---- */
+.pargrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+  gap: 6px;
+  margin-top: 8px;
+}
+.parcell {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg);
+  padding: 6px 2px;
+  text-align: center;
+  cursor: pointer;
+  font-family: var(--font-body);
+  color: var(--ink);
+}
+.parcell .h { font-size: 11px; color: var(--muted); display: block; }
+.parcell .p { font-weight: 700; font-size: 17px; font-variant-numeric: tabular-nums; }
+.parcell.p4 { border-color: var(--accent); }
+.parcell.p5 { border-color: var(--over); }
+
+/* ---- stats ---- */
+.tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.tile {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 8px;
+  text-align: center;
+}
+.tile .v { font-family: var(--font-display); font-weight: 700; font-size: 28px; line-height: 1.1; }
+.tile .k { font-size: 11.5px; color: var(--muted); font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; }
+.chartwrap { position: relative; margin-top: 4px; }
+.chartwrap svg { display: block; width: 100%; height: auto; }
+.tip {
+  position: absolute;
+  pointer-events: none;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  padding: 5px 9px;
+  font-size: 12.5px;
+  white-space: nowrap;
+  display: none;
+  z-index: 5;
+}
+.bestlist { margin: 0; padding: 0; list-style: none; }
+.bestlist li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+  font-size: 14.5px;
+}
+.bestlist li:first-child { border-top: none; }
+.bestlist .b { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* ---- history ---- */
+.rsum { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.rsum .cn { font-weight: 700; }
+.pscore {
+  display: inline-flex;
+  gap: 5px;
+  align-items: baseline;
+  margin-right: 12px;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.pscore .pm { font-weight: 700; }
+.pscore .pm.good { color: var(--accent); }
+.pscore .pm.bad { color: var(--over); }
+
+/* ---- modal ---- */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 20;
+}
+.sheet {
+  background: var(--surface);
+  border-radius: 16px 16px 0 0;
+  width: 100%;
+  max-width: 560px;
+  max-height: 86vh;
+  overflow-y: auto;
+  padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
+}
+.sheet h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin: 0 0 10px;
+}
+.field { margin: 12px 0; }
+.field label { display: block; font-size: 13px; font-weight: 600; color: var(--ink2); margin-bottom: 5px; }
+/* ---- in-app map viewer ---- */
+.mapview {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: #0b0d0c;
+  display: flex;
+  flex-direction: column;
+}
+.mapview .mhead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: calc(8px + env(safe-area-inset-top)) 12px 8px;
+  color: #edf1ec;
+}
+.mapview .mhead .t { font-family: var(--font-display); font-weight: 700; font-size: 18px; text-transform: uppercase; letter-spacing: 0.03em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mapclose {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  font-size: 20px;
+  line-height: 1;
+}
+.mapstage {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  touch-action: none;
+}
+.mapstage img {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  max-width: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
+}
+.mapfoot {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 12px calc(10px + env(safe-area-inset-bottom));
+  overflow-x: auto;
+}
+.mapfoot .mthumb {
+  flex: 0 0 auto;
+  width: 52px;
+  height: 52px;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  overflow: hidden;
+  background: #1c201d;
+  padding: 0;
+}
+.mapfoot .mthumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.mapfoot .mthumb.on { border-color: var(--accent); }
+.mapfoot .zbtn {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  font-size: 19px;
+}
+.mapempty { color: #c3c2b7; text-align: center; padding: 40px 24px; font-size: 15px; }
+.mapempty a { color: #7fc29b; }
+.mthumbrow { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.mthumbrow .mt {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+.mthumbrow .mt img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.mthumbrow .mt .rm {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  font-size: 14px;
+  line-height: 1;
+}
+.toast {
+  pointer-events: none;
+  position: fixed;
+  left: 50%;
+  bottom: calc(76px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  background: var(--ink);
+  color: var(--bg);
+  border-radius: 10px;
+  padding: 9px 16px;
+  font-size: 14px;
+  z-index: 30;
+  max-width: 90%;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .sheet { animation: up 0.18s ease-out; }
+  @keyframes up { from { transform: translateY(24px); opacity: 0.6; } to { transform: none; opacity: 1; } }
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <div class="brand">Disc <span class="disc">●</span> Golf</div>
+    <div class="topnote" id="syncnote"></div>
+  </header>
+  <main id="main"></main>
+  <nav class="tabs" id="tabs"></nav>
+</div>
+<div id="modal"></div>
+<div id="mapview"></div>
+<div id="toastbox"></div>
+<input type="file" id="mapfile" accept="image/*" multiple style="display:none">
+<script>
+"use strict";
+/* ================= state ================= */
+const state = {
+  tab: "play",
+  courses: [],
+  rounds: [],
+  dbStatus: "connecting",   // connecting | connected | local
+  readOnly: false,
+  loaded: false,
+  activeRoundId: null,
+  holeIdx: 0,
+  setup: null,              // {courseId, players:[]}
+  statsPlayer: null,
+  expanded: {},
+};
+let DB = null;
+let ASSETS = null;
+(async function initAssets() {
+  try {
+    if (window.claude && typeof window.claude.use === "function") {
+      ASSETS = await window.claude.use("assets");
+      if (state.tab === "courses") render();
+    }
+  } catch (e) { /* uploads unavailable; viewer still works for saved maps */ }
+})();
+
+/* ================= utils ================= */
+const $ = (s, el) => (el || document).querySelector(s);
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const uid = (p) => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const fmtDate = (iso) => {
+  const d = new Date(iso);
+  return isNaN(d) ? "" : d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: d.getFullYear() !== new Date().getFullYear() ? "numeric" : undefined });
+};
+function fmtPar(n) {
+  if (n === 0) return "E";
+  return n > 0 ? "+" + n : "−" + Math.abs(n);
+}
+function holeLabel(score, par) {
+  if (score == null) return "";
+  if (score === 1) return "Ace!";
+  const d = score - par;
+  if (d <= -2) return "Eagle";
+  if (d === -1) return "Birdie";
+  if (d === 0) return "Par";
+  if (d === 1) return "Bogey";
+  if (d === 2) return "Double";
+  return "+" + d;
+}
+function totals(round, pi) {
+  const sc = (round.scores && round.scores[pi]) || [];
+  let strokes = 0, toPar = 0, played = 0;
+  round.pars.forEach((p, h) => {
+    const s = sc[h];
+    if (typeof s === "number") { strokes += s; toPar += s - p; played++; }
+  });
+  return { strokes, toPar, played };
+}
+const sum = (a) => a.reduce((x, y) => x + y, 0);
+/* known local course maps: matched by course name; a course's own mapUrl is added on top */
+const MAP_DIRECTORY = [
+  { keys: ["iron hill"], links: [["Interactive map (UDisc)", "https://udisc.com/courses/iron-hill-B8VC"]] },
+  { keys: ["brandywine"], links: [["Official map (PDF)", "https://www.destateparks.com/wwwroot/downloads/discGolf/BCSPdiscGolf.pdf"], ["Interactive map (UDisc)", "https://udisc.com/courses/NRVl"]] },
+  { keys: ["bellevue"], links: [["Official map + scorecard (PDF)", "https://www.destateparks.com/wwwroot/downloads/discGolf/BVSPDiscGolfCard.pdf"], ["Interactive map (UDisc)", "https://udisc.com/courses/bellevue-state-park-j9IK"]] },
+  { keys: ["white clay"], links: [["Interactive map (UDisc)", "https://udisc.com/courses/white-clay-creek-state-park-mayB"]] },
+  { keys: ["lums pond"], links: [["Interactive map (UDisc)", "https://udisc.com/courses/lums-pond-state-park-hWxq"]] },
+  { keys: ["canby"], links: [["Interactive map (UDisc)", "https://udisc.com/courses/canby-park-west-dtJD"]] },
+  { keys: ["discovery"], links: [["Interactive map (UDisc)", "https://www.udisc.com/courses/discovery-disc-golf-course-r3ob"]] },
+  { keys: ["nixon", "anson"], links: [["Interactive map (UDisc)", "https://udisc.com/courses/anson-b-nixon-park-vsPz"]] },
+  { keys: ["riverview", "pennsville"], links: [["Interactive map (UDisc)", "https://udisc.com/courses/riverview-HpJO"]] },
+];
+function mapLinksFor(name, course) {
+  const links = [];
+  if (course && course.mapUrl) links.push(["Course map", course.mapUrl]);
+  const n = String(name || "").toLowerCase();
+  const hit = MAP_DIRECTORY.find(d => d.keys.some(k => n.indexOf(k) >= 0));
+  if (hit) hit.links.forEach(l => links.push(l));
+  return links;
+}
+function mapButton(name, course) {
+  const c = course && course.id ? course.id : "";
+  const has = course && course.mapAssets && course.mapAssets.length;
+  return `<button class="btn small ${has ? "primary" : ""}" data-act="maps" data-name="${esc(name)}" data-id="${c}">Map</button>`;
+}
+/* snapshot docs arrive frozen (read-only) — deep-copy so scoring can mutate them */
+function deepClone(o) {
+  try { return structuredClone(o); } catch (e) { return JSON.parse(JSON.stringify(o)); }
+}
+
+/* ================= persistence ================= */
+const saveTimers = {}, inFlight = {}, dirty = {};
+function pendingIds() {
+  const ids = new Set();
+  Object.keys(saveTimers).forEach(k => ids.add(k.split("/")[1]));
+  Object.keys(inFlight).forEach(k => { if (inFlight[k]) ids.add(k.split("/")[1]); });
+  return ids;
+}
+function scheduleSave(kind, id, immediate) {
+  if (!DB || state.readOnly) return;
+  const key = kind + "/" + id;
+  clearTimeout(saveTimers[key]);
+  if (immediate) { delete saveTimers[key]; flushSave(kind, id); return; }
+  saveTimers[key] = setTimeout(() => { delete saveTimers[key]; flushSave(kind, id); }, 700);
+}
+async function flushSave(kind, id) {
+  const key = kind + "/" + id;
+  if (inFlight[key]) { dirty[key] = true; return; }
+  const list = kind === "rounds" ? state.rounds : state.courses;
+  const obj = list.find(x => x.id === id);
+  if (!obj) return;
+  inFlight[key] = true;
+  try {
+    const data = Object.assign({}, obj);
+    delete data.id;
+    await DB.doc(key).set(data);
+  } catch (e) {
+    writeErr(e);
+  } finally {
+    inFlight[key] = false;
+    if (dirty[key]) { dirty[key] = false; flushSave(kind, id); }
+  }
+}
+async function deleteDoc(kind, id) {
+  const list = kind === "rounds" ? state.rounds : state.courses;
+  const i = list.findIndex(x => x.id === id);
+  if (i >= 0) list.splice(i, 1);
+  render();
+  if (!DB || state.readOnly) return;
+  try { await DB.doc(kind + "/" + id).delete(); } catch (e) { writeErr(e); }
+}
+function writeErr(e) {
+  const code = e && (e.code || e.message || "");
+  if (String(code).indexOf("not_granted") >= 0 || String(code).indexOf("not_writer") >= 0) {
+    state.readOnly = true;
+    toast("You have view-only access — changes stay on this screen.");
+  } else {
+    toast("Save didn't go through. It'll retry on your next change.");
+  }
+  render();
+}
+function snapToArr(s) {
+  try {
+    if (s && Array.isArray(s.docs)) return s.docs.map(d => Object.assign({ id: d.id }, deepClone(typeof d.data === "function" ? d.data() : d.data)));
+    if (Array.isArray(s)) return s.map(d => Object.assign({ id: d.id }, deepClone(typeof d.data === "function" ? d.data() : d)));
+  } catch (err) { /* fall through */ }
+  return [];
+}
+function mergeSnap(kind, arr) {
+  const keep = pendingIds();
+  const local = (kind === "rounds" ? state.rounds : state.courses).filter(x => keep.has(x.id));
+  const localIds = new Set(local.map(x => x.id));
+  const merged = arr.filter(x => !localIds.has(x.id)).concat(local);
+  if (kind === "rounds") state.rounds = merged; else state.courses = merged;
+}
+
+(async function initDb() {
+  try {
+    if (!(window.claude && typeof window.claude.use === "function")) {
+      state.dbStatus = "local"; state.loaded = true; render(); return;
+    }
+    const db = await window.claude.use("db");
+    if (!db) { state.dbStatus = "local"; state.loaded = true; render(); return; }
+    DB = db;
+    state.dbStatus = "connected";
+    const timer = setTimeout(() => { state.loaded = true; render(); }, 10000);
+    let got = 0;
+    const arrived = () => { got++; if (got >= 2) { clearTimeout(timer); state.loaded = true; } render(); };
+    db.collection("courses").onSnapshot(
+      s => { mergeSnap("courses", snapToArr(s)); arrived(); },
+      () => { arrived(); }
+    );
+    db.collection("rounds").onSnapshot(
+      s => {
+        mergeSnap("rounds", snapToArr(s));
+        if (!state.activeRoundId) {
+          const act = state.rounds.filter(r => r.status === "active").sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""))[0];
+          if (act && state.tab === "play" && !state.setup) state.activeRoundId = act.id;
+        }
+        arrived();
+      },
+      () => { arrived(); }
+    );
+  } catch (e) {
+    state.dbStatus = "local"; state.loaded = true; render();
+  }
+})();
+
+/* ================= rendering ================= */
+function render() {
+  renderTabs();
+  renderSync();
+  const m = $("#main");
+  if (state.tab === "play") m.innerHTML = viewPlay();
+  else if (state.tab === "courses") m.innerHTML = viewCourses();
+  else if (state.tab === "history") m.innerHTML = viewHistory();
+  else m.innerHTML = viewStats();
+  if (state.tab === "stats") wireChart();
+  const curChip = $(".holestrip .cur");
+  if (curChip && typeof curChip.scrollIntoView === "function") {
+    try { curChip.scrollIntoView({ inline: "center", block: "nearest" }); } catch (e) { /* older browsers */ }
+  }
+}
+function renderTabs() {
+  const tabs = [
+    ["play", "⛳", "Play"],
+    ["courses", "🗺", "Courses"],
+    ["history", "🗒", "Rounds"],
+    ["stats", "📈", "Stats"],
+  ];
+  $("#tabs").innerHTML = tabs.map(([id, ic, lb]) =>
+    `<button data-act="tab" data-tab="${id}" class="${state.tab === id ? "on" : ""}" aria-label="${lb}"><span class="ticon">${ic}</span>${lb}</button>`
+  ).join("");
+}
+function renderSync() {
+  const n = $("#syncnote");
+  if (state.dbStatus === "local") n.textContent = "offline — not saved";
+  else if (state.readOnly) n.textContent = "view only";
+  else if (state.dbStatus === "connecting") n.textContent = "connecting…";
+  else n.textContent = "";
+}
+function banner() {
+  if (state.dbStatus === "local") return `<div class="banner">Couldn't reach saved data — you can still keep score, but this round won't be saved. Reopen from your Claude account to sync.</div>`;
+  if (state.readOnly) return `<div class="banner">View-only access: you can browse rounds and stats, but changes won't save.</div>`;
+  return "";
+}
+
+/* ---------- play ---------- */
+function viewPlay() {
+  const active = state.rounds.filter(r => r.status === "active").sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+  if (state.activeRoundId) {
+    const r = state.rounds.find(x => x.id === state.activeRoundId);
+    if (r) return banner() + viewScorecard(r);
+    state.activeRoundId = null;
+  }
+  if (state.setup) return banner() + viewSetup();
+  let html = banner();
+  if (active.length) {
+    html += `<h2>In progress</h2>`;
+    html += active.map(r => {
+      const line = r.players.map((p, i) => {
+        const t = totals(r, i);
+        return `${esc(p)} ${fmtPar(t.toPar)}`;
+      }).join(" · ");
+      const played = Math.max.apply(null, r.players.map((_, i) => totals(r, i).played).concat([0]));
+      return `<div class="card spread">
+        <div class="rsum">
+          <span class="cn">${esc(r.courseName)}</span>
+          <span class="sub">${fmtDate(r.date)} · thru ${played}/${r.pars.length} · ${line}</span>
+        </div>
+        <button class="btn small primary" data-act="resume" data-id="${r.id}">Resume</button>
+      </div>`;
+    }).join("");
+  }
+  html += `<h2>New round</h2>
+  <div class="card">
+    <p class="sub" style="margin:0 0 12px">Pick a course, add whoever's playing, and keep score hole by hole.</p>
+    <button class="btn primary block" data-act="newround">Start a round</button>
+  </div>`;
+  if (!state.courses.length && state.loaded) {
+    html += `<p class="tiny" style="padding:0 4px">First time: you'll name the course and set its pars (defaults to par 3 everywhere, like most courses around Wilmington). It's saved for next time.</p>`;
+  }
+  return html;
+}
+function viewSetup() {
+  const s = state.setup;
+  const courses = state.courses.slice().sort((a, b) => a.name.localeCompare(b.name));
+  return `<h2>New round</h2>
+  <div class="card">
+    <div class="field"><label>Course</label>
+      <div class="row">
+        ${courses.map(c => `<button class="chip ${s.courseId === c.id ? "on" : ""}" data-act="pickcourse" data-id="${c.id}">${esc(c.name)} <span class="tiny">${c.pars.length}</span></button>`).join("")}
+        <button class="chip" data-act="newcourse">+ New course</button>
+      </div>
+    </div>
+    <div class="field"><label>Players</label>
+      <div class="row" style="margin-bottom:8px">
+        ${s.players.map((p, i) => `<button class="chip on" data-act="rmplayer" data-i="${i}" aria-label="Remove ${esc(p)}">${esc(p)} <span class="x">×</span></button>`).join("")}
+      </div>
+      <div class="row" style="flex-wrap:nowrap">
+        <input type="text" id="playerInput" placeholder="Add a player" autocomplete="off" style="flex:1">
+        <button class="btn small" data-act="addplayer">Add</button>
+      </div>
+    </div>
+    <div class="row" style="margin-top:14px">
+      <button class="btn" data-act="cancelsetup">Cancel</button>
+      <button class="btn primary" style="flex:1" data-act="startround">Tee off</button>
+    </div>
+  </div>`;
+}
+function viewScorecard(r) {
+  const h = Math.min(state.holeIdx, r.pars.length - 1);
+  const par = r.pars[h];
+  const holeDone = (i) => r.players.every((_, pi) => typeof ((r.scores[pi] || [])[i]) === "number");
+  const strip = r.pars.map((_, i) =>
+    `<button data-act="gohole" data-i="${i}" class="${i === h ? "cur" : holeDone(i) ? "done" : ""}">${i + 1}</button>`
+  ).join("");
+  const rows = r.players.map((p, pi) => {
+    const sc = (r.scores[pi] || [])[h];
+    const t = totals(r, pi);
+    const lbl = holeLabel(sc, par);
+    const lblCls = sc == null ? "" : (sc - par < 0 ? "good" : sc - par > 0 ? "bad" : "");
+    return `<div class="prow">
+      <div class="pname"><div class="nm">${esc(p)}</div><div class="thru" id="thru-${pi}">${fmtPar(t.toPar)} thru ${t.played}</div></div>
+      <button class="stepbtn" data-act="score" data-p="${pi}" data-d="-1" aria-label="Minus one for ${esc(p)}">−</button>
+      <div class="scoreval" id="sv-${pi}">${sc == null ? '<span style="color:var(--muted)">·</span>' : sc}<span class="lbl ${lblCls}">${lbl || "&nbsp;"}</span></div>
+      <button class="stepbtn" data-act="score" data-p="${pi}" data-d="1" aria-label="Plus one for ${esc(p)}">+</button>
+    </div>`;
+  }).join("");
+  return `
+  <div class="spread" style="margin:8px 0 2px">
+    <div class="rsum"><span class="cn">${esc(r.courseName)}</span><span class="tiny">${fmtDate(r.date)} · par ${sum(r.pars)}</span></div>
+    <div class="row" style="flex-wrap:nowrap">
+      ${mapButton(r.courseName, state.courses.find(c => c.id === r.courseId))}
+      <button class="btn small" data-act="exitround">Pause</button>
+    </div>
+  </div>
+  <div class="holestrip">${strip}</div>
+  <div class="card">
+    <div class="holehead"><span class="hnum">Hole ${h + 1}</span><span class="hpar">Par ${par}</span></div>
+    ${rows}
+    <div class="navrow">
+      <button class="btn" data-act="prevhole" ${h === 0 ? "disabled" : ""}>‹ Prev</button>
+      ${h < r.pars.length - 1
+        ? `<button class="btn primary" data-act="nexthole">Next ›</button>`
+        : `<button class="btn primary" data-act="finish">Finish round</button>`}
+    </div>
+  </div>
+  <div class="row" style="justify-content:center;margin-top:4px">
+    <button class="btn small danger" data-act="discard">Discard round</button>
+    ${h < r.pars.length - 1 ? `<button class="btn small" data-act="finish">Finish early</button>` : ""}
+  </div>`;
+}
+
+/* ---------- courses ---------- */
+function viewCourses() {
+  let html = banner() + `<h2>Courses</h2>`;
+  if (!state.loaded) return html + `<div class="empty">Loading…</div>`;
+  if (!state.courses.length) {
+    html += `<div class="empty">No courses saved yet.<br>Add the ones you play — pars included — and starting a round is one tap.</div>`;
+  } else {
+    html += state.courses.slice().sort((a, b) => a.name.localeCompare(b.name)).map(c => {
+      const plays = state.rounds.filter(r => r.courseId === c.id && r.status === "done").length;
+      return `<div class="card spread">
+        <div class="rsum">
+          <span class="cn">${esc(c.name)}</span>
+          <span class="sub">${c.pars.length} holes · par ${sum(c.pars)}${plays ? ` · ${plays} round${plays > 1 ? "s" : ""}` : ""}</span>
+        </div>
+        <div class="row" style="flex-wrap:nowrap">
+          ${mapButton(c.name, c)}
+          <button class="btn small" data-act="editcourse" data-id="${c.id}">Edit</button>
+        </div>
+      </div>`;
+    }).join("");
+  }
+  html += `<button class="btn primary block" data-act="newcourse" style="margin-top:6px">+ Add course</button>`;
+  return html;
+}
+function courseEditorHTML(c) {
+  return `<h3>${c.id ? "Edit course" : "New course"}</h3>
+  <div class="field"><label for="cname">Course name</label>
+    <input type="text" id="cname" value="${esc(c.name)}" placeholder="e.g. Brandywine Creek DGC" autocomplete="off">
+  </div>
+  <div class="field"><label>Holes</label>
+    <div class="row">
+      <button class="chip ${c.pars.length === 9 ? "on" : ""}" data-act="choles" data-n="9">9</button>
+      <button class="chip ${c.pars.length === 18 ? "on" : ""}" data-act="choles" data-n="18">18</button>
+      <input type="number" id="choles" min="1" max="36" value="${c.pars.length}" style="width:84px" aria-label="Number of holes">
+    </div>
+  </div>
+  <div class="field"><label>Pars <span class="tiny">(tap a hole to cycle 3 → 4 → 5)</span></label>
+    <div class="pargrid">
+      ${c.pars.map((p, i) => `<button class="parcell ${p === 4 ? "p4" : p === 5 ? "p5" : ""}" data-act="cyclepar" data-i="${i}"><span class="h">H${i + 1}</span><span class="p">${p}</span></button>`).join("")}
+    </div>
+    <p class="tiny" style="margin:8px 0 0">Course par: <strong>${sum(c.pars)}</strong></p>
+  </div>
+  <div class="field"><label>Map images <span class="tiny">(pop up in-app, mid-round)</span></label>
+    ${(c.mapAssets || []).length ? `<div class="mthumbrow">
+      ${c.mapAssets.map((a, i) => `<span class="mt"><img src="/_blob/${esc(a)}" alt="Map ${i + 1}"><button class="rm" data-act="rmmap" data-i="${i}" aria-label="Remove map image ${i + 1}">×</button></span>`).join("")}
+    </div>` : ""}
+    ${ASSETS ? `<button class="btn small" data-act="mapadd" data-target="editor" style="margin-top:8px">+ Add map image</button>` : `<p class="tiny" style="margin:6px 0 0">Image upload isn't available in this view.</p>`}
+  </div>
+  <div class="field"><label for="cmap">Map link <span class="tiny">(optional fallback, opens in browser)</span></label>
+    <input type="text" id="cmap" inputmode="url" value="${esc(c.mapUrl || "")}" placeholder="https://…" autocomplete="off">
+  </div>
+  <div class="row" style="margin-top:14px">
+    ${c.id ? `<button class="btn danger" data-act="delcourse" data-id="${c.id}">Delete</button>` : ""}
+    <button class="btn" data-act="closemodal">Cancel</button>
+    <button class="btn primary" style="flex:1" data-act="savecourse">Save course</button>
+  </div>`;
+}
+
+/* ---------- history ---------- */
+function viewHistory() {
+  let html = banner() + `<h2>Rounds</h2>`;
+  if (!state.loaded) return html + `<div class="empty">Loading…</div>`;
+  const done = state.rounds.filter(r => r.status === "done").sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  if (!done.length) return html + `<div class="empty">No finished rounds yet.<br>Your scorecards will collect here.</div>`;
+  html += done.map(r => {
+    const open = !!state.expanded[r.id];
+    const line = r.players.map((p, i) => {
+      const t = totals(r, i);
+      const cls = t.toPar < 0 ? "good" : t.toPar > 0 ? "bad" : "";
+      return `<span class="pscore">${esc(p)} <span class="pm ${cls}">${t.strokes} (${fmtPar(t.toPar)})</span></span>`;
+    }).join("");
+    return `<div class="card">
+      <button class="spread" style="width:100%;background:none;border:none;padding:0;cursor:pointer;color:inherit;font:inherit;text-align:left" data-act="togglern" data-id="${r.id}" aria-expanded="${open}">
+        <div class="rsum">
+          <span class="cn">${esc(r.courseName)} <span class="tiny">· ${fmtDate(r.date)}</span></span>
+          <span>${line}</span>
+        </div>
+        <span style="color:var(--muted)">${open ? "▴" : "▾"}</span>
+      </button>
+      ${open ? historyTable(r) + `<div class="row" style="justify-content:flex-end;margin-top:8px"><button class="btn small danger" data-act="delround" data-id="${r.id}">Delete round</button></div>` : ""}
+    </div>`;
+  }).join("");
+  return html;
+}
+function historyTable(r) {
+  const head = `<tr><th>Hole</th><th>Par</th>${r.players.map(p => `<th>${esc(p)}</th>`).join("")}</tr>`;
+  const body = r.pars.map((par, h) => `<tr>
+    <td class="hl">${h + 1}</td><td class="hl">${par}</td>
+    ${r.players.map((_, pi) => {
+      const s = (r.scores[pi] || [])[h];
+      if (typeof s !== "number") return `<td><span class="mark blank">–</span></td>`;
+      const cls = s - par < 0 ? "under" : s - par > 0 ? "over" : "";
+      return `<td><span class="mark ${cls}">${s}</span></td>`;
+    }).join("")}
+  </tr>`).join("");
+  const tot = `<tr class="tot"><td class="hl">Total</td><td class="hl">${sum(r.pars)}</td>${r.players.map((_, pi) => {
+    const t = totals(r, pi);
+    return `<td>${t.strokes} <span class="tiny">(${fmtPar(t.toPar)})</span></td>`;
+  }).join("")}</tr>`;
+  return `<div class="tablewrap"><table class="sc">${head}${body}${tot}</table></div>
+  <p class="tiny" style="margin:6px 0 0">○ under par · □ over par</p>`;
+}
+
+/* ---------- stats ---------- */
+function allPlayers() {
+  const seen = [];
+  state.rounds.filter(r => r.status === "done").forEach(r => r.players.forEach(p => { if (seen.indexOf(p) < 0) seen.push(p); }));
+  seen.sort((a, b) => (a === "Steven" ? -1 : b === "Steven" ? 1 : 0));
+  return seen;
+}
+function playerRounds(name) {
+  return state.rounds
+    .filter(r => r.status === "done" && r.players.indexOf(name) >= 0)
+    .map(r => ({ r, t: totals(r, r.players.indexOf(name)) }))
+    .filter(x => x.t.played > 0)
+    .sort((a, b) => (a.r.date || "").localeCompare(b.r.date || ""));
+}
+function viewStats() {
+  let html = banner() + `<h2>Stats</h2>`;
+  if (!state.loaded) return html + `<div class="empty">Loading…</div>`;
+  const players = allPlayers();
+  if (!players.length) return html + `<div class="empty">Finish a round and your numbers show up here:<br>best round, average vs par, and the trend.</div>`;
+  if (!state.statsPlayer || players.indexOf(state.statsPlayer) < 0) state.statsPlayer = players[0];
+  const name = state.statsPlayer;
+  const prs = playerRounds(name);
+  if (players.length > 1) {
+    html += `<div class="row" style="margin-bottom:10px">${players.map(p =>
+      `<button class="chip ${p === name ? "on" : ""}" data-act="statsplayer" data-p="${esc(p)}">${esc(p)}</button>`).join("")}</div>`;
+  }
+  const best = prs.length ? Math.min.apply(null, prs.map(x => x.t.toPar)) : null;
+  const avg = prs.length ? sum(prs.map(x => x.t.toPar)) / prs.length : null;
+  html += `<div class="tiles">
+    <div class="tile"><div class="v">${prs.length}</div><div class="k">Rounds</div></div>
+    <div class="tile"><div class="v">${best == null ? "–" : fmtPar(best)}</div><div class="k">Best vs par</div></div>
+    <div class="tile"><div class="v">${avg == null ? "–" : (avg >= 0 ? "+" : "−") + Math.abs(avg).toFixed(1)}</div><div class="k">Avg vs par</div></div>
+  </div>`;
+  if (prs.length >= 2) {
+    html += `<div class="card"><div class="spread"><strong>Score vs par by round</strong><span class="tiny">last ${Math.min(prs.length, 20)}</span></div>
+      <div class="chartwrap" id="chartwrap">${trendSVG(prs.slice(-20))}<div class="tip" id="charttip"></div></div></div>`;
+  } else if (prs.length === 1) {
+    html += `<p class="tiny" style="padding:0 4px">One more finished round and the trend chart kicks in.</p>`;
+  }
+  const byCourse = {};
+  prs.forEach(x => {
+    const k = x.r.courseName;
+    if (!byCourse[k] || x.t.toPar < byCourse[k].toPar) byCourse[k] = { toPar: x.t.toPar, strokes: x.t.strokes, date: x.r.date };
+  });
+  const keys = Object.keys(byCourse).sort();
+  if (keys.length) {
+    html += `<div class="card"><strong>Course bests — ${esc(name)}</strong><ul class="bestlist" style="margin-top:8px">
+      ${keys.map(k => `<li><span>${esc(k)}</span><span class="b">${byCourse[k].strokes} (${fmtPar(byCourse[k].toPar)}) <span class="tiny">${fmtDate(byCourse[k].date)}</span></span></li>`).join("")}
+    </ul></div>`;
+  }
+  return html;
+}
+function yTicks(min, max) {
+  // integer ticks, at most 5, always including 0 when in range
+  const span = Math.max(1, max - min);
+  const step = Math.max(1, Math.ceil(span / 4));
+  const lo = Math.floor(min / step) * step;
+  const ticks = [];
+  for (let v = lo; v <= max + 0.001; v += step) ticks.push(v);
+  if (min <= 0 && max >= 0 && ticks.indexOf(0) < 0) ticks.push(0);
+  return ticks.sort((a, b) => a - b);
+}
+let chartPts = [];
+function trendSVG(prs) {
+  const W = 640, H = 240, padL = 40, padR = 18, padT = 16, padB = 30;
+  const vals = prs.map(x => x.t.toPar);
+  let min = Math.min.apply(null, vals.concat([0]));
+  let max = Math.max.apply(null, vals.concat([0]));
+  if (min === max) { min -= 1; max += 1; }
+  const ticks = yTicks(min, max);
+  min = Math.min(min, ticks[0]); max = Math.max(max, ticks[ticks.length - 1]);
+  const x = (i) => prs.length === 1 ? (padL + (W - padL - padR) / 2) : padL + (W - padL - padR) * i / (prs.length - 1);
+  const y = (v) => padT + (H - padT - padB) * (max - v) / (max - min);
+  chartPts = prs.map((p, i) => ({ cx: x(i), cy: y(p.t.toPar), v: p.t.toPar, date: p.r.date, course: p.r.courseName, strokes: p.t.strokes }));
+  const grid = ticks.map(t => `<line x1="${padL}" y1="${y(t)}" x2="${W - padR}" y2="${y(t)}" stroke="${t === 0 ? "var(--chart-axis)" : "var(--chart-grid)"}" stroke-width="1"/>
+    <text x="${padL - 7}" y="${y(t) + 4}" text-anchor="end" font-size="12" fill="var(--muted)" font-family="var(--font-body)" style="font-variant-numeric:tabular-nums">${fmtPar(t)}</text>`).join("");
+  const path = chartPts.map((p, i) => (i ? "L" : "M") + p.cx.toFixed(1) + " " + p.cy.toFixed(1)).join(" ");
+  const area = `M${chartPts[0].cx.toFixed(1)} ${y(Math.max(0, min)).toFixed(1)} ` +
+    chartPts.map(p => `L${p.cx.toFixed(1)} ${p.cy.toFixed(1)}`).join(" ") +
+    ` L${chartPts[chartPts.length - 1].cx.toFixed(1)} ${y(Math.max(0, min)).toFixed(1)} Z`;
+  const dots = chartPts.map((p, i) => {
+    const last = i === chartPts.length - 1;
+    return `<circle cx="${p.cx.toFixed(1)}" cy="${p.cy.toFixed(1)}" r="${last ? 5 : 4}" fill="${last ? "var(--chart-series)" : "var(--surface)"}" stroke="var(--chart-series)" stroke-width="2"/>`;
+  }).join("");
+  const lastP = chartPts[chartPts.length - 1];
+  const lastLbl = `<text x="${Math.min(lastP.cx, W - padR - 4).toFixed(1)}" y="${(lastP.cy - 10).toFixed(1)}" text-anchor="middle" font-size="13" font-weight="700" fill="var(--ink)" font-family="var(--font-body)">${fmtPar(lastP.v)}</text>`;
+  const xl = `<text x="${padL}" y="${H - 8}" font-size="12" fill="var(--muted)" font-family="var(--font-body)">${fmtDate(prs[0].r.date)}</text>
+    <text x="${W - padR}" y="${H - 8}" text-anchor="end" font-size="12" fill="var(--muted)" font-family="var(--font-body)">${fmtDate(prs[prs.length - 1].r.date)}</text>`;
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Score versus par across recent rounds">
+    ${grid}
+    <path d="${area}" fill="var(--chart-series)" opacity="0.08"/>
+    <path d="${path}" fill="none" stroke="var(--chart-series)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    ${dots}${lastLbl}${xl}
+  </svg>`;
+}
+function wireChart() {
+  const wrap = $("#chartwrap");
+  if (!wrap) return;
+  const svg = $("svg", wrap), tip = $("#charttip");
+  const show = (clientX) => {
+    if (!chartPts.length) return;
+    const rect = svg.getBoundingClientRect();
+    const sx = (clientX - rect.left) / rect.width * 640;
+    let best = chartPts[0], bd = Infinity;
+    chartPts.forEach(p => { const d = Math.abs(p.cx - sx); if (d < bd) { bd = d; best = p; } });
+    tip.innerHTML = `<strong>${fmtPar(best.v)}</strong> · ${best.strokes} strokes<br><span class="tiny">${esc(best.course)} · ${fmtDate(best.date)}</span>`;
+    tip.style.display = "block";
+    const px = best.cx / 640 * rect.width;
+    const py = best.cy / 240 * rect.height;
+    tip.style.left = Math.max(4, Math.min(px - tip.offsetWidth / 2, rect.width - tip.offsetWidth - 4)) + "px";
+    tip.style.top = Math.max(0, py - tip.offsetHeight - 14) + "px";
+  };
+  svg.addEventListener("pointermove", e => show(e.clientX));
+  svg.addEventListener("pointerdown", e => show(e.clientX));
+  svg.addEventListener("pointerleave", () => { tip.style.display = "none"; });
+}
+
+/* ================= in-app map viewer ================= */
+const mv = { open: false, courseId: null, name: "", idx: 0, scale: 1, x: 0, y: 0, fit: 1, ptrs: new Map(), pinch: null };
+let uploadTarget = null; // "viewer" | "editor"
+function courseForMap() { return state.courses.find(c => c.id === mv.courseId) || null; }
+function openMapView(courseId, name) {
+  mv.open = true; mv.courseId = courseId; mv.name = name || ""; mv.idx = 0;
+  renderMapView();
+}
+function closeMapView() { mv.open = false; $("#mapview").innerHTML = ""; }
+function renderMapView() {
+  const box = $("#mapview");
+  if (!mv.open) { box.innerHTML = ""; return; }
+  const course = courseForMap();
+  const assets = (course && course.mapAssets) || [];
+  const extLinks = mapLinksFor(mv.name, course);
+  let body;
+  if (assets.length) {
+    mv.idx = Math.min(mv.idx, assets.length - 1);
+    body = `<div class="mapstage" id="mapstage"><img id="mapimg" src="/_blob/${esc(assets[mv.idx])}" alt="Course map" draggable="false"></div>
+    <div class="mapfoot">
+      <button class="zbtn" data-act="mapzoom" data-d="-1" aria-label="Zoom out">−</button>
+      <button class="zbtn" data-act="mapzoom" data-d="1" aria-label="Zoom in">+</button>
+      ${assets.map((a, i) => `<button class="mthumb ${i === mv.idx ? "on" : ""}" data-act="mapgo" data-i="${i}" aria-label="Map ${i + 1}"><img src="/_blob/${esc(a)}" alt=""></button>`).join("")}
+      ${ASSETS && course ? `<button class="zbtn" data-act="mapadd" data-target="viewer" aria-label="Add map image">⊕</button>` : ""}
+    </div>`;
+  } else {
+    body = `<div class="mapempty">
+      <p><strong>No map saved for this course yet.</strong></p>
+      ${ASSETS && course ? `<p>Add one once and it pops up here every round — screenshot the course map or snap a photo of the tee-sign board.</p>
+      <button class="btn primary block" data-act="mapadd" data-target="viewer" style="margin:10px 0">Add map image</button>` : ""}
+      ${extLinks.length ? `<p style="margin-top:18px">Grab it from:<br>${extLinks.map(l => `<a href="${esc(l[1])}" target="_blank" rel="noopener">${esc(l[0])}</a>`).join(" · ")}</p>` : ""}
+    </div>`;
+  }
+  box.innerHTML = `<div class="mapview" role="dialog" aria-modal="true" aria-label="Course map">
+    <div class="mhead"><span class="t">${esc(mv.name)}</span><button class="mapclose" data-act="mapclose" aria-label="Close map">✕</button></div>
+    ${body}
+  </div>`;
+  const img = $("#mapimg");
+  if (img) {
+    img.addEventListener("load", fitMapImage);
+    if (img.complete && img.naturalWidth) fitMapImage();
+    wireMapGestures();
+  }
+}
+function fitMapImage() {
+  const stage = $("#mapstage"), img = $("#mapimg");
+  if (!stage || !img || !img.naturalWidth) return;
+  const fit = Math.min(stage.clientWidth / img.naturalWidth, stage.clientHeight / img.naturalHeight);
+  mv.fit = fit; mv.scale = fit;
+  mv.x = (stage.clientWidth - img.naturalWidth * fit) / 2;
+  mv.y = (stage.clientHeight - img.naturalHeight * fit) / 2;
+  applyMapTransform();
+}
+function applyMapTransform() {
+  const img = $("#mapimg");
+  if (img) img.style.transform = `translate(${mv.x}px, ${mv.y}px) scale(${mv.scale})`;
+}
+function clampMap() {
+  const stage = $("#mapstage"), img = $("#mapimg");
+  if (!stage || !img || !img.naturalWidth) return;
+  const w = img.naturalWidth * mv.scale, h = img.naturalHeight * mv.scale;
+  const minX = Math.min(0, stage.clientWidth - w), minY = Math.min(0, stage.clientHeight - h);
+  if (w <= stage.clientWidth) mv.x = (stage.clientWidth - w) / 2; else mv.x = Math.max(minX, Math.min(0, mv.x));
+  if (h <= stage.clientHeight) mv.y = (stage.clientHeight - h) / 2; else mv.y = Math.max(minY, Math.min(0, mv.y));
+}
+function zoomMapAt(factor, cx, cy) {
+  const next = Math.max(mv.fit, Math.min(mv.fit * 8, mv.scale * factor));
+  const k = next / mv.scale;
+  mv.x = cx - (cx - mv.x) * k;
+  mv.y = cy - (cy - mv.y) * k;
+  mv.scale = next;
+  clampMap(); applyMapTransform();
+}
+let lastMapTap = 0;
+function wireMapGestures() {
+  const stage = $("#mapstage");
+  if (!stage) return;
+  stage.addEventListener("pointerdown", (e) => {
+    stage.setPointerCapture && stage.setPointerCapture(e.pointerId);
+    mv.ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (mv.ptrs.size === 2) {
+      const [a, b] = [...mv.ptrs.values()];
+      mv.pinch = { dist: Math.hypot(a.x - b.x, a.y - b.y) };
+    }
+  });
+  stage.addEventListener("pointermove", (e) => {
+    const prev = mv.ptrs.get(e.pointerId);
+    if (!prev) return;
+    const cur = { x: e.clientX, y: e.clientY };
+    if (mv.ptrs.size === 1) {
+      mv.x += cur.x - prev.x; mv.y += cur.y - prev.y;
+      clampMap(); applyMapTransform();
+    }
+    mv.ptrs.set(e.pointerId, cur);
+    if (mv.ptrs.size === 2 && mv.pinch) {
+      const [a, b] = [...mv.ptrs.values()];
+      const dist = Math.hypot(a.x - b.x, a.y - b.y);
+      if (dist > 0 && mv.pinch.dist > 0) {
+        const rect = stage.getBoundingClientRect();
+        zoomMapAt(dist / mv.pinch.dist, (a.x + b.x) / 2 - rect.left, (a.y + b.y) / 2 - rect.top);
+      }
+      mv.pinch.dist = dist;
+    }
+  });
+  const up = (e) => {
+    mv.ptrs.delete(e.pointerId);
+    if (mv.ptrs.size < 2) mv.pinch = null;
+    if (e.type === "pointerup" && mv.ptrs.size === 0) {
+      const now = Date.now();
+      if (now - lastMapTap < 320) {
+        const rect = stage.getBoundingClientRect();
+        const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
+        zoomMapAt(mv.scale <= mv.fit * 1.05 ? 2.5 : 0.01, cx, cy); // 0.01 clamps back to fit
+        lastMapTap = 0;
+      } else lastMapTap = now;
+    }
+  };
+  stage.addEventListener("pointerup", up);
+  stage.addEventListener("pointercancel", up);
+}
+async function handleMapFiles(files) {
+  const course = uploadTarget === "editor" ? null : courseForMap();
+  if (uploadTarget === "editor" && !modalCourse) return;
+  if (!ASSETS) { toast("Image upload isn't available right now."); return; }
+  toast("Uploading…");
+  for (const f of files) {
+    try {
+      const res = await ASSETS.upload(f);
+      if (uploadTarget === "editor") {
+        modalCourse.mapAssets = modalCourse.mapAssets || [];
+        modalCourse.mapAssets.push(res.id);
+        modalCourse.newAssets = (modalCourse.newAssets || []).concat([res.id]);
+      } else if (course) {
+        course.mapAssets = course.mapAssets || [];
+        course.mapAssets.push(res.id);
+        scheduleSave("courses", course.id, true);
+      }
+    } catch (e) {
+      toast("Upload failed: " + ((e && e.message) || "try a smaller image"));
+    }
+  }
+  if (uploadTarget === "editor") { syncModalInputs(); openModal(courseEditorHTML(modalCourse)); }
+  else renderMapView();
+}
+
+/* ================= modal & toast ================= */
+let modalCourse = null;
+function openModal(html) { $("#modal").innerHTML = `<div class="backdrop" data-act="backdrop"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`; }
+function closeModal() {
+  // uploads made in a course editor that was then cancelled are orphans — clean them up
+  if (modalCourse && modalCourse.newAssets && modalCourse.newAssets.length && ASSETS) {
+    modalCourse.newAssets.forEach(id => { ASSETS.delete(id).catch(() => {}); });
+  }
+  $("#modal").innerHTML = ""; modalCourse = null;
+}
+function confirmSheet(title, body, okLabel, act, id) {
+  openModal(`<h3>${esc(title)}</h3><p class="sub" style="margin-top:0">${body}</p>
+  <div class="row"><button class="btn" data-act="closemodal">Cancel</button>
+  <button class="btn ${/delete|discard/i.test(okLabel) ? "danger" : "primary"}" style="flex:1" data-act="${act}" data-id="${id || ""}">${esc(okLabel)}</button></div>`);
+}
+let toastTimer = null;
+function toast(msg) {
+  $("#toastbox").innerHTML = `<div class="toast">${esc(msg)}</div>`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { $("#toastbox").innerHTML = ""; }, 3500);
+}
+
+/* ================= actions ================= */
+function addPlayerFromInput() {
+  const inp = $("#playerInput");
+  if (!inp) return;
+  const name = inp.value.trim();
+  if (!name) return;
+  if (state.setup.players.some(p => p.toLowerCase() === name.toLowerCase())) { toast(name + " is already in."); return; }
+  if (state.setup.players.length >= 6) { toast("Six players max on one card."); return; }
+  state.setup.players.push(name);
+  render();
+  const again = $("#playerInput"); if (again) again.focus();
+}
+function startRound() {
+  const s = state.setup;
+  const course = state.courses.find(c => c.id === s.courseId);
+  if (!course) { toast("Pick a course first."); return; }
+  if (!s.players.length) { toast("Add at least one player."); return; }
+  const r = {
+    id: uid("r_"),
+    courseId: course.id,
+    courseName: course.name,
+    pars: course.pars.slice(),
+    players: s.players.slice(),
+    scores: {},
+    status: "active",
+    date: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
+  };
+  s.players.forEach((_, i) => { r.scores[i] = course.pars.map(() => null); });
+  state.rounds.push(r);
+  state.activeRoundId = r.id;
+  state.holeIdx = 0;
+  state.setup = null;
+  scheduleSave("rounds", r.id, true);
+  render();
+}
+function bumpScore(pi, delta) {
+  const r = state.rounds.find(x => x.id === state.activeRoundId);
+  if (!r) return;
+  const h = state.holeIdx;
+  if (!r.scores) r.scores = {};
+  if (!r.scores[pi]) r.scores[pi] = r.pars.map(() => null);
+  const cur = r.scores[pi][h];
+  let next;
+  if (cur == null) next = delta > 0 ? r.pars[h] : Math.max(1, r.pars[h] - 1);
+  else next = Math.max(1, Math.min(15, cur + delta));
+  if (next === cur) return;
+  r.scores[pi][h] = next;
+  scheduleSave("rounds", r.id);
+  updateScoreUI(r);
+}
+/* update score cells in place so the buttons under the thumb are never replaced mid-tap */
+function updateScoreUI(r) {
+  const h = state.holeIdx;
+  const par = r.pars[h];
+  let ok = true;
+  r.players.forEach((p, pi) => {
+    const sv = $("#sv-" + pi), th = $("#thru-" + pi);
+    if (!sv || !th) { ok = false; return; }
+    const sc = (r.scores[pi] || [])[h];
+    const lbl = holeLabel(sc, par);
+    const lblCls = sc == null ? "" : (sc - par < 0 ? "good" : sc - par > 0 ? "bad" : "");
+    sv.innerHTML = (sc == null ? '<span style="color:var(--muted)">·</span>' : sc) + `<span class="lbl ${lblCls}">${lbl || "&nbsp;"}</span>`;
+    const t = totals(r, pi);
+    th.textContent = fmtPar(t.toPar) + " thru " + t.played;
+  });
+  if (!ok) render();
+}
+function finishRound(id) {
+  const r = state.rounds.find(x => x.id === id);
+  if (!r) return;
+  r.status = "done";
+  r.finishedAt = new Date().toISOString();
+  scheduleSave("rounds", r.id, true);
+  state.activeRoundId = null;
+  state.holeIdx = 0;
+  state.expanded = {}; state.expanded[r.id] = true;
+  state.tab = "history";
+  closeModal();
+  render();
+  const winnerLine = r.players.length > 1
+    ? (() => {
+        const ts = r.players.map((p, i) => ({ p, t: totals(r, i) })).filter(x => x.t.played > 0);
+        if (!ts.length) return "";
+        const bestVal = Math.min.apply(null, ts.map(x => x.t.toPar));
+        const w = ts.filter(x => x.t.toPar === bestVal).map(x => x.p);
+        return w.length === 1 ? ` ${w[0]} takes it at ${fmtPar(bestVal)}.` : ` Tied at ${fmtPar(bestVal)}.`;
+      })()
+    : "";
+  toast("Round saved." + winnerLine);
+}
+function saveCourseFromModal() {
+  const name = ($("#cname") ? $("#cname").value : "").trim();
+  if (!name) { toast("Give the course a name."); return; }
+  modalCourse.name = name;
+  let mapUrl = ($("#cmap") ? $("#cmap").value : "").trim();
+  if (mapUrl && !/^https?:\/\//i.test(mapUrl)) mapUrl = "https://" + mapUrl;
+  modalCourse.mapUrl = mapUrl;
+  const removed = (modalCourse.removedAssets || []).slice();
+  modalCourse.newAssets = []; // kept on save
+  modalCourse.removedAssets = [];
+  if (ASSETS) removed.forEach(id => { ASSETS.delete(id).catch(() => {}); });
+  if (modalCourse.id) {
+    const c = state.courses.find(x => x.id === modalCourse.id);
+    if (c) { c.name = modalCourse.name; c.pars = modalCourse.pars.slice(); c.mapUrl = modalCourse.mapUrl; c.mapAssets = (modalCourse.mapAssets || []).slice(); scheduleSave("courses", c.id, true); }
+  } else {
+    const c = { id: uid("c_"), name: modalCourse.name, pars: modalCourse.pars.slice(), mapUrl: modalCourse.mapUrl, mapAssets: (modalCourse.mapAssets || []).slice(), createdAt: new Date().toISOString() };
+    state.courses.push(c);
+    scheduleSave("courses", c.id, true);
+    if (state.setup) state.setup.courseId = c.id;
+  }
+  closeModal();
+  render();
+}
+function syncModalInputs() {
+  if (!modalCourse) return;
+  const nameEl = $("#cname"); if (nameEl) modalCourse.name = nameEl.value;
+  const mapEl = $("#cmap"); if (mapEl) modalCourse.mapUrl = mapEl.value;
+}
+function setModalHoles(n) {
+  n = Math.max(1, Math.min(36, n || 0));
+  const pars = modalCourse.pars;
+  while (pars.length < n) pars.push(3);
+  pars.length = n;
+  openModal(courseEditorHTML(modalCourse));
+}
+
+/* ================= event wiring ================= */
+/* Score steppers fire on pointerup: on some phones, synthesized click events
+   never reach a delegated handler, so taps on + / − went nowhere. A tap only
+   counts if it starts and ends on the same button without turning into a scroll. */
+let scoreTapStart = null, lastScoreTapAt = 0;
+document.addEventListener("pointerdown", (e) => {
+  const el = e.target && e.target.closest ? e.target.closest('[data-act="score"]') : null;
+  scoreTapStart = el ? { el, x: e.clientX, y: e.clientY } : null;
+}, true);
+document.addEventListener("pointercancel", () => { scoreTapStart = null; }, true);
+document.addEventListener("pointerup", (e) => {
+  const start = scoreTapStart;
+  scoreTapStart = null;
+  if (!start) return;
+  const el = e.target && e.target.closest ? e.target.closest('[data-act="score"]') : null;
+  if (el && el === start.el && Math.abs(e.clientX - start.x) < 14 && Math.abs(e.clientY - start.y) < 14) {
+    lastScoreTapAt = Date.now();
+    bumpScore(+el.getAttribute("data-p"), +el.getAttribute("data-d"));
+  }
+}, true);
+window.addEventListener("error", (e) => {
+  try { toast("Something broke: " + ((e && e.message) || "unknown error")); } catch (err) { /* noop */ }
+});
+document.addEventListener("click", (e) => {
+  const el = e.target.closest("[data-act]");
+  if (!el) return;
+  const act = el.getAttribute("data-act");
+  const id = el.getAttribute("data-id");
+  switch (act) {
+    case "tab": state.tab = el.getAttribute("data-tab"); render(); break;
+    case "backdrop": if (e.target === el) closeModal(); break;
+    case "closemodal": closeModal(); break;
+    case "newround": state.setup = { courseId: state.courses.length === 1 ? state.courses[0].id : null, players: ["Steven"] }; render(); break;
+    case "cancelsetup": state.setup = null; render(); break;
+    case "pickcourse": state.setup.courseId = id; render(); break;
+    case "rmplayer": state.setup.players.splice(+el.getAttribute("data-i"), 1); render(); break;
+    case "addplayer": addPlayerFromInput(); break;
+    case "startround": startRound(); break;
+    case "resume": {
+      state.activeRoundId = id;
+      const r = state.rounds.find(x => x.id === id);
+      if (r) {
+        let firstOpen = r.pars.findIndex((_, i) => r.players.some((_, pi) => typeof ((r.scores[pi] || [])[i]) !== "number"));
+        state.holeIdx = firstOpen < 0 ? r.pars.length - 1 : firstOpen;
+      }
+      state.tab = "play"; render(); break;
+    }
+    case "exitround": state.activeRoundId = null; render(); break;
+    case "gohole": state.holeIdx = +el.getAttribute("data-i"); render(); break;
+    case "prevhole": state.holeIdx = Math.max(0, state.holeIdx - 1); render(); break;
+    case "nexthole": {
+      const r = state.rounds.find(x => x.id === state.activeRoundId);
+      if (r) state.holeIdx = Math.min(r.pars.length - 1, state.holeIdx + 1);
+      render(); break;
+    }
+    case "score":
+      // pointer events normally handle score taps; this is the fallback for browsers without them
+      if (Date.now() - lastScoreTapAt > 600) bumpScore(+el.getAttribute("data-p"), +el.getAttribute("data-d"));
+      break;
+    case "finish": {
+      const r = state.rounds.find(x => x.id === state.activeRoundId);
+      if (!r) break;
+      const anyScore = r.players.some((_, pi) => totals(r, pi).played > 0);
+      if (!anyScore) { toast("Nothing scored yet — discard instead?"); break; }
+      const lines = r.players.map((p, i) => { const t = totals(r, i); return `${esc(p)}: <strong>${t.strokes}</strong> (${fmtPar(t.toPar)}) thru ${t.played}`; }).join("<br>");
+      confirmSheet("Finish round?", lines, "Finish & save", "dofinish", r.id);
+      break;
+    }
+    case "dofinish": finishRound(id); break;
+    case "discard": {
+      const r = state.rounds.find(x => x.id === state.activeRoundId);
+      if (r) confirmSheet("Discard this round?", "The scorecard is thrown out — it won't appear in history or stats.", "Discard", "dodiscard", r.id);
+      break;
+    }
+    case "dodiscard": closeModal(); state.activeRoundId = null; deleteDoc("rounds", id); break;
+    case "togglern": state.expanded[id] = !state.expanded[id]; render(); break;
+    case "delround": confirmSheet("Delete this round?", "It comes out of history and stats for everyone on the card.", "Delete", "dodelround", id); break;
+    case "dodelround": closeModal(); deleteDoc("rounds", id); break;
+    case "newcourse": modalCourse = { id: null, name: "", pars: Array(18).fill(3), mapUrl: "" }; openModal(courseEditorHTML(modalCourse)); break;
+    case "editcourse": {
+      const c = state.courses.find(x => x.id === id);
+      if (c) { modalCourse = { id: c.id, name: c.name, pars: c.pars.slice(), mapUrl: c.mapUrl || "" }; openModal(courseEditorHTML(modalCourse)); }
+      break;
+    }
+    case "maps": openMapView(el.getAttribute("data-id") || null, el.getAttribute("data-name")); break;
+    case "mapclose": closeMapView(); break;
+    case "mapgo": mv.idx = +el.getAttribute("data-i"); renderMapView(); break;
+    case "mapzoom": {
+      const stage = $("#mapstage");
+      if (stage) zoomMapAt(el.getAttribute("data-d") === "1" ? 1.5 : 1 / 1.5, stage.clientWidth / 2, stage.clientHeight / 2);
+      break;
+    }
+    case "mapadd": {
+      uploadTarget = el.getAttribute("data-target");
+      const fi = $("#mapfile");
+      if (fi) { fi.value = ""; fi.click(); }
+      break;
+    }
+    case "rmmap": {
+      if (!modalCourse || !modalCourse.mapAssets) break;
+      syncModalInputs();
+      const removedId = modalCourse.mapAssets.splice(+el.getAttribute("data-i"), 1)[0];
+      const ni = (modalCourse.newAssets || []).indexOf(removedId);
+      if (ni >= 0) { modalCourse.newAssets.splice(ni, 1); if (ASSETS) ASSETS.delete(removedId).catch(() => {}); }
+      else { modalCourse.removedAssets = (modalCourse.removedAssets || []).concat([removedId]); }
+      openModal(courseEditorHTML(modalCourse));
+      break;
+    }
+    case "choles": if (modalCourse) { syncModalInputs(); setModalHoles(+el.getAttribute("data-n")); } break;
+    case "cyclepar": {
+      if (!modalCourse) break;
+      syncModalInputs();
+      const i = +el.getAttribute("data-i");
+      modalCourse.pars[i] = modalCourse.pars[i] >= 5 ? 3 : modalCourse.pars[i] + 1;
+      openModal(courseEditorHTML(modalCourse));
+      break;
+    }
+    case "savecourse": saveCourseFromModal(); break;
+    case "delcourse": confirmSheet("Delete this course?", "Past rounds keep their scorecards; the course just leaves your list.", "Delete", "dodelcourse", id); break;
+    case "dodelcourse": closeModal(); deleteDoc("courses", id); break;
+    case "statsplayer": state.statsPlayer = el.getAttribute("data-p"); render(); break;
+  }
+});
+document.addEventListener("change", (e) => {
+  if (e.target && e.target.id === "mapfile" && e.target.files && e.target.files.length) {
+    handleMapFiles(Array.prototype.slice.call(e.target.files));
+    return;
+  }
+  if (e.target && e.target.id === "choles" && modalCourse) {
+    syncModalInputs();
+    setModalHoles(parseInt(e.target.value, 10));
+  }
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && e.target && e.target.id === "playerInput") { e.preventDefault(); addPlayerFromInput(); }
+  if (e.key === "Escape") { if (mv.open) closeMapView(); else closeModal(); }
+});
+
+render();
+</script>
+</body>
+</html>
