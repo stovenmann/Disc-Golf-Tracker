@@ -35,6 +35,11 @@ Clubhouse is the look whatever the phone's own light or dark setting. For a dark
 champagne and ivory, with the same fonts. The choice is kept on that phone only, in the browser's
 storage, and doesn't touch saved rounds or courses. The course map viewer is always dark.
 
+The page carries a Home Screen icon for iPhone: a cream disc golf basket with brass chains on
+bottle green, labelled "Disc Golf". `design/app-icon.ps1` draws it (Windows PowerShell, nothing
+to install), and `python design/embed_icon.py` writes it into `index.html` as an
+`apple-touch-icon`. The image is embedded because the artifact can't serve separate files.
+
 ## Saving, and playing without signal
 
 In a Claude artifact, rounds and courses are saved to the artifact's database and map images to
@@ -88,3 +93,5 @@ To try the app by hand against made-up data, open `harness.html?seed=<name>`. Th
 | `FINDINGS.md` | The bugs found in the first version, how each was reproduced, and how it was fixed |
 | `REDESIGN.md` | The agreed redesign (opponents, friends' history, the Clubhouse look) and its build order |
 | `design/canvas/` | Source of the redesign mock-ups, for reference |
+| `design/app-icon.png`, `app-icon-180.png` | The Home Screen icon, full size and at iPhone size |
+| `design/app-icon.ps1`, `embed_icon.py` | Draw the icon; put it into `index.html` |
