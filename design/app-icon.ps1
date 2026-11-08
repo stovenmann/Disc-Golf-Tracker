@@ -1,7 +1,10 @@
-# Draws design/app-icon.png: the Home Screen icon for the Disc Golf Tracker, in the Clubhouse
-# colours (bottle green, cream, brass): a disc golf basket with brass chains.
+# Draws the Disc Golf Tracker's icon, in the Clubhouse colours (bottle green, cream, brass): a disc
+# golf basket with brass chains. It writes the full-size drawing to design/app-icon.png, and the
+# sizes the site serves to public/icons/:
+#   apple-touch-icon.png  180 x 180, the iPhone Home Screen
+#   icon-192.png, icon-512.png  named in public/manifest.webmanifest; 192 is also the browser tab's
 # Uses the drawing library built into Windows; nothing to install.
-#   powershell -ExecutionPolicy Bypass -File design\app-icon.ps1
+#   powershell -NoProfile -ExecutionPolicy Bypass -File design\app-icon.ps1
 # iOS rounds the corners itself, so the square is full bleed.
 Add-Type -AssemblyName System.Drawing
 
@@ -65,16 +68,24 @@ $g.DrawLine((New-Pen $cream 34), (P 300 $rimY), (P 724 $rimY))
 # foot
 $g.DrawLine($creamPen, (P 430 $baseY), (P 594 $baseY))
 
-$bmp.Save($out, [System.Drawing.Imaging.ImageFormat]::Png)
+# if a save fails with "A generic error occurred in GDI+", the old file couldn't be replaced:
+# delete it and run the script again
+function Save-Png($bitmap, $path) {
+  $bitmap.Save($path, [System.Drawing.Imaging.ImageFormat]::Png)
+  Write-Output "wrote $path"
+}
+Save-Png $bmp $out
 
-# 180 x 180, the size iOS uses for a Home Screen icon; design/embed_icon.py puts it in index.html
-$small = Join-Path $PSScriptRoot "app-icon-180.png"
-$sm = New-Object System.Drawing.Bitmap 180, 180
-$gs = [System.Drawing.Graphics]::FromImage($sm)
-$gs.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
-$gs.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::HighQuality
-$gs.DrawImage($bmp, 0, 0, 180, 180)
-$sm.Save($small, [System.Drawing.Imaging.ImageFormat]::Png)
-$gs.Dispose(); $sm.Dispose()
+$icons = Join-Path (Split-Path $PSScriptRoot -Parent) "public\icons"
+New-Item -ItemType Directory -Force $icons | Out-Null
+foreach ($size in @(@(180, "apple-touch-icon.png"), @(192, "icon-192.png"), @(512, "icon-512.png"))) {
+  $n = $size[0]
+  $sm = New-Object System.Drawing.Bitmap $n, $n
+  $gs = [System.Drawing.Graphics]::FromImage($sm)
+  $gs.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+  $gs.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::HighQuality
+  $gs.DrawImage($bmp, 0, 0, $n, $n)
+  Save-Png $sm (Join-Path $icons $size[1])
+  $gs.Dispose(); $sm.Dispose()
+}
 $g.Dispose(); $bmp.Dispose()
-Write-Output "wrote $out and $small"

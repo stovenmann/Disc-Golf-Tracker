@@ -38,10 +38,19 @@ Clubhouse is the look whatever the phone's own light or dark setting. For a dark
 champagne and ivory, with the same fonts. The choice is kept on that phone only, in the browser's
 storage, and doesn't touch saved rounds or courses. The course map viewer is always dark.
 
-The page carries a Home Screen icon for iPhone: a cream disc golf basket with brass chains on
-bottle green, labelled "Disc Golf". `design/app-icon.ps1` draws it (Windows PowerShell, nothing
-to install), and `python design/embed_icon.py` writes it into `public/index.html` as an
-`apple-touch-icon`.
+## On the Home Screen
+
+On the Cloudflare site, Safari's **Share → Add to Home Screen** gives the scorecard its own icon: a
+cream disc golf basket with brass chains on bottle green, labelled "Disc Golf". Opened from the
+icon, it runs full screen like an installed app, with no Safari address bar. The phone's status
+bar takes the look's background: cream in Clubhouse, deep green in Twilight.
+
+On an iPhone, the Home Screen app keeps its own copy on the phone, separate from Safari's, and its
+own choice of look. It may ask you to sign in once more the first time it opens.
+
+`design/app-icon.ps1` draws the icon (Windows PowerShell, nothing to install) and writes the sizes
+the site serves into `public/icons/`. `public/manifest.webmanifest` gives the Home Screen the
+app's name, its icons and full screen.
 
 ## Saving, and playing without signal
 
@@ -86,13 +95,14 @@ python -m http.server 8766 --bind 127.0.0.1 --directory test
 ```
 
 Then open http://127.0.0.1:8766/tests.html in a browser tab you can see: background tabs slow
-timers and throw the checks off. All 36 should pass:
+timers and throw the checks off. All 39 should pass:
 - 12 check the Cloudflare Worker (`worker/index.js`) that will serve the app (see `CLOUDFLARE.md`);
-- 24 check the app itself.
+- 27 check the app itself.
 
 Add `?only=<words>` to run some of them, for example `?only=Worker`.
 
-`make_harness.py` also copies the Worker to `test/worker.js`, so the browser can load it as it is.
+`make_harness.py` also copies the Worker to `test/worker.js`, so the browser can load it as it is,
+and the manifest and icons from `public/` to the same places in `test/`.
 Its checks use an in-memory stand-in for Cloudflare's database and file storage, and sign-in
 tokens made with a throwaway key.
 
@@ -122,5 +132,6 @@ To try the app by hand against made-up data, open `harness.html?seed=<name>`. Th
 | `REDESIGN.md` | The agreed redesign (opponents, friends' history, the Clubhouse look) and its build order |
 | `CLOUDFLARE.md` | The approved plan to move the app from a Claude artifact to its own Cloudflare site |
 | `design/canvas/` | Source of the redesign mock-ups, for reference |
-| `design/app-icon.png`, `app-icon-180.png` | The Home Screen icon, full size and at iPhone size |
-| `design/app-icon.ps1`, `embed_icon.py` | Draw the icon; put it into `public/index.html` |
+| `public/manifest.webmanifest`, `public/icons/` | The Home Screen name, icons and full-screen setting |
+| `design/app-icon.png` | The icon at full size |
+| `design/app-icon.ps1` | Draws the icon and writes its sizes into `public/icons/` |

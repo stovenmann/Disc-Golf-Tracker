@@ -1,2 +1,4 @@
 test/harness.html
 test/worker.js
+test/manifest.webmanifest
+test/icons/

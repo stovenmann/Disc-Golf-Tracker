@@ -2,7 +2,7 @@
 
 Agreed with Steve on 2026-11-07, and the plan approved the same day.
 
-**Where it stands.** Steps 1 and 2 are done; all 36 checks pass.
+**Where it stands.** Steps 1 to 3 are done; all 39 checks pass.
 - **Step 1:** the Worker (`worker/index.js`), its settings (`wrangler.jsonc`) and 12 checks.
 - **Step 2:** the page (now `public/index.html`) saves through the Worker's API.
   - It keeps the last copy on the phone, so it opens with no signal.
@@ -12,12 +12,24 @@ Agreed with Steve on 2026-11-07, and the plan approved the same day.
   - Step 2 found one real bug. A phone's kept copy from one database could have passed for current
     on a recreated database, because both counted versions from zero. Each database now has a
     random tag in its ETag, and two new checks cover it.
+- **Step 3:** the Home Screen and full screen, with 3 checks.
+  - `public/manifest.webmanifest` gives the name "Disc Golf", the icons and full screen. The page
+    fetches it with the sign-in cookie, since Access turns away a request without one.
+  - The icon is now a file: `public/icons/apple-touch-icon.png` for the iPhone, and 192 and 512
+    sizes for the manifest. `design/app-icon.ps1` writes all three.
+  - The phone's status bar takes the look's background, in Clubhouse and in Twilight.
 
-Two things can only be tried on Cloudflare itself, at step 4:
+Some things can only be tried on Cloudflare itself, at step 4:
 - the SQL against a real D1 database (the checks use a stand-in);
-- a real Access sign-in token (the checks sign their own the same way).
+- a real Access sign-in token (the checks sign their own the same way);
+- on the iPhone: the icon and name on the Home Screen, full screen, the status bar in both looks,
+  and signing in from the Home Screen app.
 
-Next: step 3.
+If the Home Screen shows a letter or a screenshot instead of the basket, iOS fetched the icon
+without the sign-in cookie. The fix is an Access rule that lets anyone fetch `/icons/*` and
+`/manifest.webmanifest`, which hold nothing private.
+
+Next: step 4.
 
 ## Why
 
@@ -98,7 +110,8 @@ Claude writes exact click-by-click steps when it's time:
 1. Worker, database and API, with browser checks.
 2. The page talks to the new API; the harness uses the new stand-in; all checks pass.
 3. Manifest, icons and full-screen settings.
-4. Steve's dashboard setup, the first publish, and sign-in tried on his iPhone.
+4. Steve's dashboard setup and the first publish. Then, on his iPhone: sign in, add it to the
+   Home Screen, and open it from there.
 5. Export, import, compare. Steve checks his data on the phone.
 
 Then redesign slice 2 (the roster) continues on Cloudflare.

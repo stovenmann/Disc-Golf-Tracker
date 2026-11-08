@@ -331,6 +331,106 @@ check("Map images load from the scorecard's own address", async () => {
     ["/api/maps/" + "a".repeat(32), "/api/maps/" + "b".repeat(32)]);
 });
 
+/* ---------- 9. Home Screen and full screen ---------- */
+// The manifest and icons live in public/ beside the page; make_harness.py copies them next to
+// the harness, so they resolve against the page the way they will on Cloudflare.
+function loadImage(url) {
+  return new Promise((ok, bad) => {
+    const img = new Image();
+    img.onload = () => ok(img);
+    img.onerror = () => bad(new Error("no image at " + url));
+    img.src = url;
+  });
+}
+function cornerColour(img) {
+  const c = document.createElement("canvas");
+  c.width = img.naturalWidth;
+  c.height = img.naturalHeight;
+  const g = c.getContext("2d");
+  g.drawImage(img, 0, 0);
+  const d = g.getImageData(2, 2, 1, 1).data;
+  return "#" + [d[0], d[1], d[2]].map((v) => v.toString(16).padStart(2, "0")).join("").toUpperCase();
+}
+const metaOf = (a, name) => { const m = a.$(`meta[name="${name}"]`); return m ? m.getAttribute("content") : null; };
+
+check("Added to the Home Screen, it shows the basket icon and the name Disc Golf", async () => {
+  const a = await openApp("seed=empty");
+  const link = a.$('link[rel="apple-touch-icon"]');
+  expectTrue("the page names a Home Screen icon", link);
+  const img = await loadImage(new URL(link.getAttribute("href"), a.doc.baseURI).href);
+  expect("icon size", [img.naturalWidth, img.naturalHeight], [180, 180]);
+  expect("icon background (bottle green)", cornerColour(img), "#1F4A34");
+  expect("name under the icon", metaOf(a, "apple-mobile-web-app-title"), "Disc Golf");
+  const tab = a.$('link[rel="icon"]');
+  expectTrue("the browser tab shows the basket too", tab);
+  await loadImage(new URL(tab.getAttribute("href"), a.doc.baseURI).href);
+});
+
+check("Opened from the Home Screen, it runs full screen like an app", async () => {
+  const a = await openApp("seed=empty");
+  expect("full screen on an iPhone", metaOf(a, "apple-mobile-web-app-capable"), "yes");
+  expect("full screen on other phones", metaOf(a, "mobile-web-app-capable"), "yes");
+  expectTrue("the page reaches under the notch and the home bar", /viewport-fit=cover/.test(metaOf(a, "viewport") || ""));
+  const link = a.$('link[rel="manifest"]');
+  expectTrue("the page names a web-app manifest", link);
+  // Cloudflare's sign-in turns away a manifest fetched without the sign-in cookie
+  expect("the manifest is fetched signed in", link.getAttribute("crossorigin"), "use-credentials");
+  const at = new URL(link.getAttribute("href"), a.doc.baseURI);
+  const res = await fetch(at.href, { credentials: "include" });
+  expectTrue("the manifest is served", res.ok);
+  const m = await res.json();
+  expect("display", m.display, "standalone");
+  expect("name", m.name, "Disc Golf Scorecard");
+  expect("short name", m.short_name, "Disc Golf");
+  const home = new URL("./", at).href;
+  expect("opens on the scorecard's own page", new URL(m.start_url, at).href, home);
+  expect("stays inside the scorecard", new URL(m.scope, at).href, home);
+  expect("splash colour (Clubhouse cream)", String(m.background_color).toUpperCase(), "#F3EEE2");
+  const sizes = [];
+  for (const i of m.icons || []) {
+    const img = await loadImage(new URL(i.src, at).href);
+    expect(i.src + " size", img.naturalWidth + "x" + img.naturalHeight, i.sizes);
+    expect(i.src + " background (bottle green)", cornerColour(img), "#1F4A34");
+    sizes.push(i.sizes);
+  }
+  expect("icon sizes in the manifest", sizes.sort(), ["192x192", "512x512"]);
+  // with the page under the notch, the bars pad themselves clear of it and of the home bar
+  const rules = [...a.doc.styleSheets].flatMap((s) => { try { return [...s.cssRules]; } catch (e) { return []; } });
+  const css = (sel) => { const r = rules.find((x) => x.selectorText === sel); return r ? r.style.cssText : ""; };
+  expectTrue("the top bar clears the notch", /safe-area-inset-top/.test(css("header.topbar")));
+  expectTrue("the tab bar clears the home bar", /safe-area-inset-bottom/.test(css("nav.tabs")));
+});
+
+check("The phone's status bar takes the look's colour, Clubhouse or Twilight", async () => {
+  const bar = (a) => metaOf(a, "theme-color");
+  const page = (a) => a.win.getComputedStyle(a.doc.body).backgroundColor;
+  const rgb = (a, colour) => {
+    const s = a.doc.createElement("i");
+    s.style.color = colour;
+    a.doc.body.appendChild(s);
+    const c = a.win.getComputedStyle(s).color;
+    s.remove();
+    return c;
+  };
+  const cream = "rgb(243, 238, 226)", twilight = "rgb(14, 21, 17)";
+  // iOS draws its own bar, tinted with this colour, so the clock stays readable in both looks
+  let a = await openApp("seed=empty");
+  expect("status bar style", metaOf(a, "apple-mobile-web-app-status-bar-style"), "default");
+  expectTrue("the page names a status bar colour", bar(a));
+  expect("page in Clubhouse", page(a), cream);
+  expect("status bar in Clubhouse", rgb(a, bar(a)), cream);
+  a.click('[data-act="settings"]');
+  a.click('#modal [data-act="setlook"][data-look="twilight"]');
+  expect("page after choosing Twilight", page(a), twilight);
+  expect("status bar after choosing Twilight", rgb(a, bar(a)), twilight);
+  a = await openApp("seed=empty");          // Twilight is kept on this phone
+  expect("page on reopening", page(a), twilight);
+  expect("status bar on reopening", rgb(a, bar(a)), twilight);
+  a.click('[data-act="settings"]');
+  a.click('#modal [data-act="setlook"][data-look="clubhouse"]');
+  expect("status bar back in Clubhouse", rgb(a, bar(a)), cream);
+});
+
 /* ---------- runner ---------- */
 (async () => {
   const only = new URLSearchParams(location.search).get("only");
