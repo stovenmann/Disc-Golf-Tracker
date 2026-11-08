@@ -1,7 +1,7 @@
 # Redesign: opponents, friends' history and a new look
 
 Agreed with Steve on 2026-11-07. Build it in the order at the end. Slice 1 (the Clubhouse look) is
-built; slices 2 to 4 are not.
+built and live as artifact version 10; slices 2 to 4 are not built.
 
 The screens are on a private Claude design canvas: https://claude.ai/artifact/JaLgtx8yW6VySAYkPytgTH.
 The canvas's source is in `design/canvas/`: one `.dc.html` file per screen plus `canvas.json`.
@@ -46,7 +46,8 @@ Each slice:
 - Publish to the live artifact only when Steve says so.
 
 1. **Clubhouse look on the existing screens.** Colours, fonts, the icon tab bar, the new
-   scorecard layout. No change to saved data. **Done 2026-11-07, not yet published.** Where it
+   scorecard layout. No change to saved data. **Done 2026-11-07; published as artifact version 10 (commit
+   `f35161f`).** Where it
    differs from the canvas, and why:
    - The tabs are already in the final order (Play · Rounds · Stats · Courses). Stats sits where
      Players will go in slice 4.
