@@ -2,3 +2,6 @@ test/harness.html
 test/worker.js
 test/manifest.webmanifest
 test/icons/
+
+# the old Claude artifact's data, exported for the one-time move to Cloudflare: never committed
+export/
