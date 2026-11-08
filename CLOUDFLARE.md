@@ -29,7 +29,8 @@ If the Home Screen shows a letter or a screenshot instead of the basket, iOS fet
 without the sign-in cookie. The fix is an Access rule that lets anyone fetch `/icons/*` and
 `/manifest.webmanifest`, which hold nothing private.
 
-Next: step 4.
+Next: step 4. The setup steps are below, and `wrangler.jsonc` turns off preview copies, so the
+one at the workers.dev address is the only one.
 
 ## Why
 
@@ -96,14 +97,53 @@ Still only Python and a browser.
    compare totals. Steve then plays one round on the new address before the old one is retired
    from use.
 
-## Steve's one-time setup (about 15 minutes, in the Cloudflare dashboard)
+## Steve's one-time setup (about 20 minutes, in the Cloudflare dashboard)
 
-Claude writes exact click-by-click steps when it's time:
-1. Create a D1 database `disc-golf` and an R2 bucket `disc-golf-maps`. Send Claude the
-   database's id, which isn't a secret.
-2. Workers & Pages → Create → import the GitHub repo `stovenmann/Disc-Golf-Tracker`, deploying
-   from the `live` branch.
-3. Zero Trust → Access: protect the new address and allow only Steve's email.
+Written 2026-11-08 from Cloudflare's docs of that week. Cloudflare moves its screens around, so a
+label may differ a little; the names to type are exact. Use the Cloudflare account the family
+calendar is on, at dash.cloudflare.com.
+
+**Part 1: the storage (about 5 minutes)**
+1. **Database.** Storage & databases → D1 SQL database → Create database. Name it `disc-golf` and
+   leave the location as it is. Copy its **Database ID** (a long code with dashes) and send it to
+   Claude. It isn't a secret.
+2. **Map storage.** Storage & databases → R2 object storage. If Cloudflare asks to turn R2 on, it
+   wants a payment card: up to 10 GB a month is free, and a $5 hold may show and drop off. Then
+   Create bucket, named `disc-golf-maps`, with the location left as it is.
+
+Claude then puts the database ID into `wrangler.jsonc` and makes the first publish: the `live`
+branch, at the same commit as `main`.
+
+**Part 2: the app and its sign-in (about 15 minutes, after Claude says it's published)**
+3. **The app.** Workers & Pages → Create application → import a repository from GitHub. Let
+   Cloudflare see `stovenmann/Disc-Golf-Tracker` if GitHub asks, and pick it.
+   - Project name: `disc-golf`. Build command: empty. Deploy command: `npx wrangler deploy`.
+   - Production branch: `live`. If the form doesn't ask, set it afterwards in the Worker's
+     Settings → Build → Branch control.
+   - Leave builds for other branches (previews) off.
+   - Deploy. When the build is done, the Worker shows its address,
+     `https://disc-golf.<something>.workers.dev`.
+4. **Sign-in.** In the Worker: the Access tab → Protect this Worker behind Access → All traffic.
+   (Older screens: Settings → Domains & Routes → workers.dev → Enable Cloudflare Access.)
+   - A box shows the **team domain** (ending `cloudflareaccess.com`) and the **AUD tag** (a long
+     code). Copy both.
+   - Then make sure only you get in. Zero Trust → Access controls → Policies → the one named
+     `disc-golf - Production` → its Include rule is **Emails**, with your email and nothing else.
+     Never "Everyone", and not a login method on its own: either lets anyone in.
+5. **The Worker's sign-in settings.** In the Worker: Settings → Variables and Secrets → Add, three
+   times, type Text:
+   - `ACCESS_TEAM_DOMAIN`: the team domain from the box;
+   - `ACCESS_AUD`: the AUD tag;
+   - `ALLOWED_EMAILS`: your email.
+   Then deploy. They live only in the dashboard, so your email stays out of this public repo.
+6. **On the iPhone.**
+   - Open the address in Safari and sign in with your email and the code Cloudflare sends.
+     The app opens empty: your rounds move over at step 5.
+   - Share → Add to Home Screen. The icon should be the basket, named "Disc Golf".
+   - Open it from the Home Screen: full screen, no Safari bar. It may ask you to sign in once
+     more. Try Settings → Twilight and check the top of the screen.
+   - Make a course called Test, score a hole, then discard the round and delete the course.
+   - Keep playing real rounds on the old app until step 5.
 
 ## Build order
 
