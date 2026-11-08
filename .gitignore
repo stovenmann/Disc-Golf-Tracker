@@ -1,5 +1,4 @@
 test/harness.html
-test/import-harness.html
 test/worker.js
 test/manifest.webmanifest
 test/icons/

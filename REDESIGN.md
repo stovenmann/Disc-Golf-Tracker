@@ -43,7 +43,7 @@ Each slice:
 - Write checks in `test/tests.js` first wherever there is logic.
 - Run the whole suite until it passes.
 - Commit and push.
-- Publish to the live artifact only when Steve says so.
+- Publish (move `live` up to `main`) only when Steve says so.
 
 1. **Clubhouse look on the existing screens.** Colours, fonts, the icon tab bar, the new
    scorecard layout. No change to saved data. **Done 2026-11-07; published as artifact version 10 (commit
@@ -66,8 +66,8 @@ Each slice:
    `CLOUDFLARE.md`. Slices 2 to 4 are built on Cloudflare.
 2. **Player roster.** Add a `players` collection. Match the names in existing rounds to roster
    entries, case-insensitively ("steven" and "Steven" are one person). Keep the original names on
-   every round, so the change only adds. Export a copy of the saved data before it runs on the
-   live artifact.
+   every round, so the change only adds. Take a copy of the saved data before it runs on the
+   live app.
 3. **Formats:** Classic, Match play, and Best disc with teams and "disc played".
 4. **Players tab:** your page and the friend pages, as on the canvas.
 
@@ -82,10 +82,9 @@ Data shape to settle in slice 2 (a sketch, not a decision):
 ## Working notes
 
 - Development needs only Python 3 and a browser. Nothing else is installed (no Node, no `gh`).
-- The live app is the private artifact https://claude.ai/artifact/BGtnTbuWtkc7EapWecrqLc.
-  - It was last published from `index.html` at commit `f35161f` (version 10). It keeps its `db`,
-    `assets` and `user` capabilities, and the move to Cloudflare leaves it untouched.
-  - The app is now `public/index.html`, built for Cloudflare (see `CLOUDFLARE.md`).
-  - Before republishing, confirm the live version still matches the last published commit.
-- Claude Code's browser pane isn't signed in to claude.ai, so a session can't view the live app or
-  the canvas. The test harness in `test/` is where changes get checked.
+- The live app runs on Cloudflare, deployed from the `live` branch, behind Steve's sign-in (see
+  `CLOUDFLARE.md`). Its address isn't written in this public repo.
+- The old version is the private artifact https://claude.ai/artifact/BGtnTbuWtkc7EapWecrqLc,
+  last published from `index.html` at commit `f35161f` (version 10). It is left untouched.
+- Claude Code's browser pane isn't signed in to the app or to claude.ai, so a session can't view
+  the live app or the canvas. The test harness in `test/` is where changes get checked.

@@ -3,11 +3,10 @@
 A phone-first disc golf scorecard. It keeps score hole by hole for up to six players, remembers
 your courses and their pars, shows course maps mid-round, and tracks your scores over time.
 
-The app is one HTML file (`public/index.html`). It is moving from a [Claude](https://claude.ai)
-artifact to its own Cloudflare site (see `CLOUDFLARE.md`):
-- **Today** the live app is still the Claude artifact, published from commit `f35161f`.
-- **This repo's `main`** is built for Cloudflare: the page saves through the Worker in
-  `worker/index.js`. It isn't deployed yet.
+The app is one HTML file (`public/index.html`), served with a small API (`worker/index.js`) from
+its own Cloudflare site, behind a sign-in that only lets Steve in. `CLOUDFLARE.md` tells how it
+moved there. It started as a [Claude](https://claude.ai) artifact; that old version is left
+untouched, last published from commit `f35161f`.
 
 ## What it does
 
@@ -84,10 +83,10 @@ keeps score, but it says it can't save.
 
 ## Running it
 
-Cloudflare deploys the Worker and `public/` from this repo's `live` branch. `CLOUDFLARE.md` has
-the one-time setup and the order of the remaining steps. Until then, the live app is the Claude
-artifact. It was published from `index.html` at commit `f35161f`, with the `db` and `assets`
-capabilities.
+Cloudflare deploys the Worker and `public/` from this repo's `live` branch. Work lands on `main`;
+publishing means moving `live` up to `main`, and happens only when Steve says so.
+`CLOUDFLARE.md` has the one-time dashboard setup. The site's address and sign-in settings live in
+the Cloudflare dashboard, not in this public repo.
 
 ## Testing
 
@@ -99,16 +98,14 @@ python -m http.server 8766 --bind 127.0.0.1 --directory test
 ```
 
 Then open http://127.0.0.1:8766/tests.html in a browser tab you can see: background tabs slow
-timers and throw the checks off. All 44 should pass:
-- 12 check the Cloudflare Worker (`worker/index.js`) that serves the app (see `CLOUDFLARE.md`);
-- 28 check the app itself;
-- 4 check the one-time import page (`public/import.html`).
+timers and throw the checks off. All 40 should pass:
+- 12 check the Cloudflare Worker (`worker/index.js`) that will serve the app (see `CLOUDFLARE.md`);
+- 28 check the app itself.
 
 Add `?only=<words>` to run some of them, for example `?only=Worker`.
 
-`make_harness.py` also builds `test/import-harness.html` from the import page the same way. It
-copies the Worker to `test/worker.js`, so the browser can load it as it is, and the manifest and
-icons from `public/` to the same places in `test/`.
+`make_harness.py` also copies the Worker to `test/worker.js`, so the browser can load it as it is,
+and the manifest and icons from `public/` to the same places in `test/`.
 Its checks use an in-memory stand-in for Cloudflare's database and file storage, and sign-in
 tokens made with a throwaway key.
 
@@ -141,6 +138,5 @@ To try the app by hand against made-up data, open `harness.html?seed=<name>`. Th
 | `CLOUDFLARE.md` | The approved plan to move the app from a Claude artifact to its own Cloudflare site |
 | `design/canvas/` | Source of the redesign mock-ups, for reference |
 | `public/manifest.webmanifest`, `public/icons/` | The Home Screen name, icons and full-screen setting |
-| `public/import.html` | One-time page that brings rounds and courses over from the old version; delete after the move |
 | `design/app-icon.png` | The icon at full size |
 | `design/app-icon.ps1` | Draws the icon and writes its sizes into `public/icons/` |

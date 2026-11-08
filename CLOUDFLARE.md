@@ -2,7 +2,9 @@
 
 Agreed with Steve on 2026-11-07, and the plan approved the same day.
 
-**Where it stands.** Steps 1 to 3 are done; all 39 checks pass.
+**Where it stands.** The scorecard runs on Cloudflare, behind Steve's sign-in, and all 40 checks
+pass. Steps 1 to 4 are done. Step 5 isn't needed: Steve chose to start fresh. What's left is
+Steve's own round on the new address.
 - **Step 1:** the Worker (`worker/index.js`), its settings (`wrangler.jsonc`) and 12 checks.
 - **Step 2:** the page (now `public/index.html`) saves through the Worker's API.
   - It keeps the last copy on the phone, so it opens with no signal.
@@ -48,19 +50,17 @@ one at the workers.dev address is the only one.
   - The import form had set `main` as the production branch, with preview builds on for other
     branches. So pushes to `main` were deploying, and the push to `live` failed as a preview
     (`wrangler preview` wants a `previews` block this app doesn't use). Steve then set the
-    production branch to `live` and turned preview builds off (Settings → Build → Branch
-    control). Step 3 below now says to check that after the import.
-- Step 5, moving the data (2026-11-08):
-  - **Export done.** Claude read the old artifact's rounds and courses read-only, straight into
-    files in `export/` (git-ignored), without their contents passing through the conversation.
-    The artifact held 1 course and 1 round, and no map images. `export/disc-golf-backup.json`
-    bundles them into one file.
-  - **Import page built:** `public/import.html`, with 4 checks. It only adds: anything already on
-    the server is left as it is, so running it twice is harmless. It then reads everything back
-    and compares it with the file. A rehearsal on the real file against the stand-in server added
-    1 course and 1 round, and both matched.
-  - Next: publish it, Steve runs it with the backup file, then opens the app to compare. Then
-    delete the import page.
+    production branch to `live` (Settings → Build → Branch control), and a test push to `main`
+    confirmed it no longer deploys. Builds for other branches are still on, so each push to `main`
+    runs a preview that fails and deploys nothing; turning them off is a tidy-up. Step 3 below
+    now says to check both after the import.
+- Step 5, moving the data, isn't needed (2026-11-08). Claude exported the old artifact's data
+  read-only into the git-ignored `export/` folder: 1 course and 1 round, no map images. Steve then
+  chose to start fresh rather than bring those over. A one-time import page was built and checked
+  (commit `b0b27fa`), then taken out unused; it can be restored from that commit if ever wanted.
+  The old artifact still has its data, untouched.
+- Next: Steve plays a round on the new address, then stops using the old one. Then redesign
+  slice 2 (the roster).
 
 ## Why
 
@@ -118,6 +118,8 @@ Still only Python and a browser.
   in-memory database and file store, so its API is tested before it ever reaches Cloudflare.
 
 ## Moving the data
+
+Not done: Steve chose to start fresh on 2026-11-08 (see "Where it stands"). The plan was:
 
 1. **Export.** Claude reads the artifact's rounds, courses and map images, read-only, into a
    folder on Steve's PC that git ignores. Disc golf scores are read through the model to do this.
@@ -185,6 +187,6 @@ branch, at the same commit as `main`.
 3. Manifest, icons and full-screen settings.
 4. Steve's dashboard setup and the first publish. Then, on his iPhone: sign in, add it to the
    Home Screen, and open it from there.
-5. Export, import, compare. Steve checks his data on the phone.
+5. Export, import, compare. Steve checks his data on the phone. *Not needed: Steve started fresh.*
 
 Then redesign slice 2 (the roster) continues on Cloudflare.
