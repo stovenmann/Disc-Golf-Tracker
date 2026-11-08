@@ -38,9 +38,14 @@ one at the workers.dev address is the only one.
   the three sign-in settings are saved. From outside, every address on the site, the API
   included, sends a stranger to the sign-in page, and a made-up sign-in token is turned away too.
   (The address isn't written here: it contains Steve's email name, and this repo is public.)
-- Not yet seen: the app itself behind the sign-in, and whether the three settings reached it.
-  Step 6, on the iPhone, shows both.
-- Next: step 6.
+- Step 6 found two things (2026-11-08):
+  - The three sign-in settings had gone in as **build** settings, which the running app never
+    sees, so the server answered "Sign-in isn't set up on the server yet." Step 5 below now says
+    where they go.
+  - The app called that answer "no connection", which was wrong. A server that answers with a
+    problem now shows "server problem — kept on this phone" and a banner with the server's own
+    words; a check covers it. This change is on `main`, waiting for Steve's word to publish.
+- Next: Steve adds the three settings in the right place, then finishes step 6.
 
 ## Why
 
@@ -141,7 +146,9 @@ branch, at the same commit as `main`.
      `disc-golf - Production` → its Include rule is **Emails**, with your email and nothing else.
      Never "Everyone", and not a login method on its own: either lets anyone in.
 5. **The Worker's sign-in settings.** In the Worker: Settings → Variables and Secrets → Add, three
-   times, type Text:
+   times, type Text. This is the section beside Domains & Routes, **not** "Build variables and
+   secrets" in the Build section: those are only used while Cloudflare builds the app, and the
+   running app never sees them. Its panel has a Deploy button; the build one only has Save.
    - `ACCESS_TEAM_DOMAIN`: the team domain from the box;
    - `ACCESS_AUD`: the AUD tag;
    - `ALLOWED_EMAILS`: your email.

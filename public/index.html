@@ -786,6 +786,7 @@ let DB = null;
 let ASSETS = null;
 let shownHole = null;     // round and hole on screen at the last render
 let signedOut = false;    // Cloudflare's sign-in has lapsed: changes wait on this phone until it's back
+let serverTrouble = "";   // the server answered, but with a problem (its own words): changes wait here too
 
 /* ================= utils ================= */
 const $ = (s, el) => (el || document).querySelector(s);
@@ -991,11 +992,12 @@ function writeFailed(key, e) {
   }
   if (code === "quota_exceeded") { toast("Saved data is full — delete some old rounds so new ones can save."); return; }
   // anything else is treated as a dropped connection: keep the change and try again
-  // (signed out counts here too: the change is kept, and setSignedOut has already said so)
+  // (signed out and a server problem count here too: the change is kept, and the top bar says which)
   if (!syncTrouble) {
     syncTrouble = true;
     renderSync();
-    if (code !== "signed_out") toast("No connection — scores are kept on this phone and save when you're back online.");
+    if (e && e.server) toast("The server couldn't save this: " + (serverTrouble || SERVER_SILENT) + " It's kept on this phone.");
+    else if (code !== "signed_out") toast("No connection — scores are kept on this phone and save when you're back online.");
   }
   const n = retryCount[key] = (retryCount[key] || 0) + 1;
   const delay = Math.min(30000, 2000 * Math.pow(2, n - 1)) * (0.85 + Math.random() * 0.3);
@@ -1088,7 +1090,10 @@ tryAutoResume();
    - The last copy of each collection is kept on the phone. Opened with no signal, the app starts
      from it, like the artifact's cache did.
    - A lapsed sign-in (a 401, or Cloudflare's redirect to its sign-in page) is not lost data: it
-     sets signedOut, the outbox keeps every change, and they are sent once sign-in is back. */
+     sets signedOut, the outbox keeps every change, and they are sent once sign-in is back.
+   - A server that answers with a problem (a 5xx, such as "sign-in isn't set up on the server
+     yet") is not a lost signal either: it sets serverTrouble to the server's own words, so the
+     screen says what's wrong, and the outbox keeps retrying until the server is fixed. */
 const API = "/api";
 const CACHE_KEY = "dg.cache.v1";
 const POLL_MS = 30000;
@@ -1096,6 +1101,15 @@ const mapSrc = (id) => API + "/maps/" + encodeURIComponent(id);
 function signedOutResponse(res) {
   return res.type === "opaqueredirect" || res.status === 401 || res.status === 403 ||
     (res.status >= 300 && res.status < 400 && res.status !== 304);
+}
+const SERVER_SILENT = "It didn't say why.";
+function setServerTrouble(words) {
+  if (serverTrouble === words) return;
+  serverTrouble = words;
+  render(); // the banner is part of each screen
+}
+async function serverWords(res) {
+  try { const b = await res.json(); return (b && b.message) || SERVER_SILENT; } catch (e) { return SERVER_SILENT; }
 }
 function setSignedOut(v) {
   if (signedOut === v) return;
@@ -1138,16 +1152,21 @@ function makeCloud() {
       if (signedOutResponse(res)) { setSignedOut(true); failed(kind); }
       else if (res.status === 304) {
         setSignedOut(false);
+        setServerTrouble("");
         if (!definitive[kind]) { definitive[kind] = true; emit(kind); } // the kept copy is current
       } else if (res.ok) {
         const body = await res.json();
         setSignedOut(false);
+        setServerTrouble("");
         docsOf[kind] = Array.isArray(body.docs) ? body.docs : [];
         etags[kind] = res.headers.get("etag");
         definitive[kind] = true;
         keep();
         emit(kind);
-      } else failed(kind);
+      } else {
+        if (res.status >= 500) setServerTrouble(await serverWords(res));
+        failed(kind);
+      }
     } catch (e) {
       failed(kind); // no connection: try again on the next round
     }
@@ -1174,8 +1193,13 @@ function makeCloud() {
     if (signedOutResponse(res)) { setSignedOut(true); throw { code: "signed_out", message: "Signed out." }; }
     let out = null;
     try { out = await res.json(); } catch (e) { out = null; }
-    if (!res.ok) throw { code: (out && out.code) || "http_" + res.status, message: (out && out.message) || "" };
+    if (!res.ok) {
+      const server = res.status >= 500;
+      if (server) setServerTrouble((out && out.message) || SERVER_SILENT);
+      throw { code: (out && out.code) || "http_" + res.status, message: (out && out.message) || "", server };
+    }
     setSignedOut(false);
+    setServerTrouble("");
     return out;
   }
   const db = {
@@ -1217,7 +1241,7 @@ async function connect() {
     try {
       const res = await fetch(API + "/docs/courses", { headers: { accept: "application/json" }, redirect: "manual", cache: "no-store" });
       if (signedOutResponse(res)) { setSignedOut(true); return cloud; }
-      return /json/.test(res.headers.get("content-type") || "") ? cloud : null;
+      return /json/.test(res.headers.get("content-type") || "") || res.status >= 500 ? cloud : null;
     } catch (e) {
       await new Promise(r => setTimeout(r, wait));
     }
@@ -1305,6 +1329,7 @@ function renderSync() {
   if (state.dbStatus === "local") n.textContent = "offline — not saved";
   else if (state.readOnly) n.textContent = "view only";
   else if (signedOut) n.textContent = "signed out — kept on this phone";
+  else if (serverTrouble) n.textContent = "server problem — kept on this phone";
   else if (syncTrouble && Object.keys(outbox).length) n.textContent = "no connection — kept on this phone";
   else if (state.dbStatus === "connecting") n.textContent = "connecting…";
   else n.textContent = "";
@@ -1312,6 +1337,7 @@ function renderSync() {
 function banner() {
   if (state.dbStatus === "local") return `<div class="banner">This copy isn't connected to the scorecard's server. You can keep score, but nothing is saved.</div>`;
   if (signedOut) return `<div class="banner spread"><span>Signed out. Your scores are safe on this phone until you sign in.</span><button class="btn small primary" data-act="signin">Sign in</button></div>`;
+  if (serverTrouble) return `<div class="banner">The scorecard's server has a problem. It says: “${esc(serverTrouble)}” Your scores are kept on this phone and save once it's fixed.</div>`;
   if (state.readOnly) return `<div class="banner">View-only access: you can browse rounds and stats, but changes won't save.</div>`;
   return "";
 }

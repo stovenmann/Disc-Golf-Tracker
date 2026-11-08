@@ -18,6 +18,9 @@
      signedout=401       every request answers as Cloudflare does when sign-in has lapsed;
      signedout=redirect  "redirect" sends its redirect to the sign-in page instead;
                          switch with __mock.setSignedOut("" | "401" | "redirect")
+     server=503          every request gets the Worker's answer when its sign-in settings are
+                         missing ("not set up yet"); server=500 gets its answer to a crash;
+                         switch with __mock.setServer("" | "503" | "500")
      nomock=1            no API at all, like a page opened outside Cloudflare
    Every request is recorded in window.__mock.log. All data is made up. */
 (function () {
@@ -31,6 +34,12 @@
   let FAIL = q.get("fail") === "1";
   let OFFLINE = q.get("offline") === "1";
   let SIGNED_OUT = q.get("signedout") || "";
+  let SERVER = q.get("server") || "";
+  // the Worker's own words for each (worker/index.js)
+  const SERVER_SAYS = {
+    503: { code: "not_configured", message: "Sign-in isn't set up on the server yet." },
+    500: { code: "server_error", message: "Something went wrong on the server. Try again." },
+  };
   const day = 86400000, now = Date.now();
   const iso = (daysAgo) => new Date(now - daysAgo * day).toISOString();
   const aid = (ch) => ch.repeat(32);
@@ -93,6 +102,7 @@
     setFail: (v) => { FAIL = !!v; },
     setOffline: (v) => { OFFLINE = !!v; },
     setSignedOut: (v) => { SIGNED_OUT = v ? String(v) : ""; },
+    setServer: (v) => { SERVER = v ? String(v) : ""; },
   };
   if (q.get("nomock") === "1") return; // behave like a page with no server behind it
   window.__mock.installed = true;
@@ -127,6 +137,7 @@
         return;
       }
       if (SIGNED_OUT) { entry.ev = "signed_out"; resolve(json(401, { code: "signed_out", message: "Sign in again to save." })); return; }
+      if (SERVER) { entry.ev = "server_" + SERVER; resolve(json(Number(SERVER), SERVER_SAYS[SERVER])); return; }
       if (parts[1] === "docs") {
         const coll = parts[2];
         if (!store[coll]) { resolve(json(404, { code: "not_found", message: "No such collection." })); return; }

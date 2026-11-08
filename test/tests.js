@@ -331,6 +331,28 @@ check("Map images load from the scorecard's own address", async () => {
     ["/api/maps/" + "a".repeat(32), "/api/maps/" + "b".repeat(32)]);
 });
 
+check("A server that answers with a problem says so, not \"no connection\"", async () => {
+  // what Steve saw at the first deploy: the sign-in settings hadn't reached the server
+  const a = await openApp("seed=midround");
+  a.mock.setServer("503");
+  a.click(plus(0));
+  await wait(1500);                              // the save fires after 700 ms and is refused
+  expect("top bar", a.$("#syncnote").textContent, "server problem — kept on this phone");
+  expectTrue("the toast doesn't blame the signal: " + a.toast(), !/no connection/i.test(a.toast()));
+  expectTrue("the toast gives the server's own words: " + a.toast(), /Sign-in isn't set up on the server yet/.test(a.toast()));
+  expectTrue("the banner gives the server's own words", /Sign-in isn't set up on the server yet/.test(a.$("#main").textContent));
+  expect("the score stays on screen", a.js("state.rounds.find(r => r.id === 'r_mid').scores[0][5]"), 3);
+  a.mock.setServer("");                          // fixed in the dashboard
+  await wait(3500);                              // the first retry comes about 2 s after the refusal
+  expect("stored score for player 1, hole 6", a.mock.peek("rounds", "r_mid").scores[0][5], 3);
+  expect("top bar once the server is fixed", a.$("#syncnote").textContent, "");
+  expectTrue("the banner is gone once the server is fixed", !/isn't set up/.test(a.$("#main").textContent));
+  // opened while the server has a problem: the screen says so instead of looking empty
+  const b = await openApp("seed=maps&server=500");
+  expect("top bar on opening", b.$("#syncnote").textContent, "server problem — kept on this phone");
+  expectTrue("the banner on opening", /Something went wrong on the server/.test(b.$("#main").textContent));
+});
+
 /* ---------- 9. Home Screen and full screen ---------- */
 // The manifest and icons live in public/ beside the page; make_harness.py copies them next to
 // the harness, so they resolve against the page the way they will on Cloudflare.

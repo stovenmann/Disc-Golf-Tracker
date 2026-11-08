@@ -72,6 +72,10 @@ If Cloudflare's sign-in runs out mid-round, it's the same: the scores stay on th
 top bar says "signed out — kept on this phone". A Sign in button brings back the sign-in page, and
 everything waiting is sent once you're signed in.
 
+If the server answers but with a problem (it isn't set up, or it failed), that isn't a lost
+signal either. The top bar says "server problem — kept on this phone", a banner gives the server's
+own words, and the waiting scores are sent once it's fixed.
+
 Scores that never got sent are restored the next time the app opens. "Round saved" appears only
 once the round is actually saved.
 
@@ -95,9 +99,9 @@ python -m http.server 8766 --bind 127.0.0.1 --directory test
 ```
 
 Then open http://127.0.0.1:8766/tests.html in a browser tab you can see: background tabs slow
-timers and throw the checks off. All 39 should pass:
+timers and throw the checks off. All 40 should pass:
 - 12 check the Cloudflare Worker (`worker/index.js`) that will serve the app (see `CLOUDFLARE.md`);
-- 27 check the app itself.
+- 28 check the app itself.
 
 Add `?only=<words>` to run some of them, for example `?only=Worker`.
 
@@ -114,7 +118,9 @@ To try the app by hand against made-up data, open `harness.html?seed=<name>`. Th
 `empty`, `maps`, `midround`, `six` and `partial`. Options:
 - `&fail=1` makes every save fail;
 - `&offline=1` makes everything fail;
-- `&signedout=401` or `&signedout=redirect` acts as if the sign-in had run out.
+- `&signedout=401` or `&signedout=redirect` acts as if the sign-in had run out;
+- `&server=503` answers like a server missing its sign-in settings, and `&server=500` like one
+  that failed.
 
 `test/mock-api.js` lists the rest.
 
