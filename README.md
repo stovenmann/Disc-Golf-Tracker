@@ -10,17 +10,30 @@ gives it somewhere to save rounds, courses and map images.
 
 - **Play.** Pick a course, add players, and score each hole with − and +. The first tap on a
   blank hole enters par. Each score is labelled (birdie, par, bogey, …), and every player shows
-  their running total against par. You can pause a round and pick it up later at the first hole
-  not yet scored for everyone. You can also finish early or throw a round away.
+  their strokes and running total against par. A grid of hole numbers at the top of the card
+  shows which holes are scored; tap one to jump to it. You can pause a round (the pause button
+  at the top) and pick it up later at the first hole not yet scored for everyone. You can also
+  finish early or throw a round away.
+- **Rounds.** Every finished round as a full scorecard. A score under par sits in a filled circle,
+  and a score over par in an outlined square, so the shape carries the meaning, not just the colour.
+- **Stats.** For each player: rounds played, best and average score against par, a trend chart
+  of the last 20 rounds, and a best score for each course. Rounds finished early are left out of
+  these numbers, so a few holes can't beat a full round.
 - **Courses.** Name a course, set 1–36 holes, and tap each hole to set its par (3, 4 or 5). Add
   photos or screenshots of the course map. They open full screen during a round, with pinch and
   double-tap zoom. An optional link can point to a map online. Several courses around
   Wilmington, Delaware, come with links to their UDisc or state park maps.
-- **Rounds.** Every finished round as a full scorecard, with scores under par circled and over
-  par boxed.
-- **Stats.** For each player: rounds played, best and average score against par, a trend chart
-  of the last 20 rounds, and a best score for each course. Rounds finished early are left out of
-  these numbers, so a few holes can't beat a full round.
+
+## The look
+
+The app uses the **Clubhouse** look: cream scorecard paper, bottle green and brass. Headings and
+numbers are set in Libre Caslon Text, everything else in Inter, both loaded from Google Fonts.
+The tab bar (Play, Rounds, Stats, Courses) uses line icons.
+
+Clubhouse is the look whatever the phone's own light or dark setting. For a dark screen, open
+**Settings** (the sliders button at the top of Play) and choose **Twilight**: deep green,
+champagne and ivory, with the same fonts. The choice is kept on that phone only, in the browser's
+storage, and doesn't touch saved rounds or courses. The course map viewer is always dark.
 
 ## Saving, and playing without signal
 

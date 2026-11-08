@@ -1,6 +1,7 @@
 # Redesign: opponents, friends' history and a new look
 
-Agreed with Steve on 2026-11-07. Nothing below is built yet. Build it in the order at the end.
+Agreed with Steve on 2026-11-07. Build it in the order at the end. Slice 1 (the Clubhouse look) is
+built; slices 2 to 4 are not.
 
 The screens are on a private Claude design canvas: https://claude.ai/artifact/JaLgtx8yW6VySAYkPytgTH.
 The canvas's source is in `design/canvas/`: one `.dc.html` file per screen plus `canvas.json`.
@@ -19,8 +20,9 @@ name and number on the canvas is sample data.
   - Shapes: radius 14px, pill buttons.
   - Scores: under par is a filled circle; over par, or a hole lost, is an outlined square. Shape
     carries the meaning, not colour alone.
-- **Dark mode (proposed, not yet confirmed):** use the Twilight colours (row B on the canvas)
-  when the phone is in dark mode.
+- **Dark mode (confirmed 2026-11-07):** Clubhouse cream is the default, whatever the phone's own
+  setting. A switch in Settings turns on the Twilight colours (row B on the canvas) with the
+  Clubhouse fonts, not Twilight's. The choice is kept on the phone, not in the saved data.
 - **Formats, chosen at tee-off:**
   - *Classic:* lowest total strokes wins.
   - *Match play:* each hole is won, lost or halved; the card shows the match status
@@ -44,7 +46,20 @@ Each slice:
 - Publish to the live artifact only when Steve says so.
 
 1. **Clubhouse look on the existing screens.** Colours, fonts, the icon tab bar, the new
-   scorecard layout. No change to saved data.
+   scorecard layout. No change to saved data. **Done 2026-11-07, not yet published.** Where it
+   differs from the canvas, and why:
+   - The tabs are already in the final order (Play · Rounds · Stats · Courses). Stats sits where
+     Players will go in slice 4.
+   - Settings is a sliders button at the top of Play. It opens a sheet that holds the
+     Clubhouse/Twilight switch.
+   - The scorecard title is the course name, with the date and par above it. The format name
+     takes the title in slice 3.
+   - The hole grid marks each hole as scored, current or not yet played. Match results (won,
+     lost, halved) come in slice 3.
+   - Pause stays a one-tap button beside Map, and Finish early and Discard sit under the
+     hole buttons. The canvas puts all three behind a "…" menu. Keeping them one tap away
+     left every behaviour and check unchanged; the menu can follow if Steve wants it.
+   - The course map viewer keeps a dark background in both looks, so maps read well.
 2. **Player roster.** Add a `players` collection. Match the names in existing rounds to roster
    entries, case-insensitively ("steven" and "Steven" are one person). Keep the original names on
    every round, so the change only adds. Export a copy of the saved data before it runs on the
