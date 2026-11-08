@@ -1,0 +1,54 @@
+{
+  "v": 3,
+  "createdOnFiles": { "v": 1, "at": "2026-11-07T21:10:00Z" },
+  "title": "Disc Golf Tracker Redesign",
+  "launch": { "view": "canvas" },
+  "pages": [],
+  "boards": {
+    "Setup.dc.html": { "x": 0, "y": 0, "w": 390, "h": 844, "title": "New round: format and teams", "radius": 32 },
+    "Main.dc.html": { "x": 470, "y": 0, "w": 390, "h": 844, "title": "Match play scorecard", "radius": 32 },
+    "BestDisc.dc.html": { "x": 940, "y": 0, "w": 390, "h": 844, "title": "Best disc scorecard", "radius": 32 },
+    "Friend.dc.html": { "x": 1410, "y": 0, "w": 390, "h": 900, "title": "A friend: Pat", "radius": 32 },
+    "Stats.dc.html": { "x": 1880, "y": 0, "w": 390, "h": 1080, "title": "You: Steven", "radius": 32 },
+    "Setup-twilight.dc.html": { "x": 0, "y": 1500, "w": 390, "h": 844, "title": "New round · Twilight", "radius": 32 },
+    "Main-twilight.dc.html": { "x": 470, "y": 1500, "w": 390, "h": 844, "title": "Match play · Twilight", "radius": 32 },
+    "BestDisc-twilight.dc.html": { "x": 940, "y": 1500, "w": 390, "h": 844, "title": "Best disc · Twilight", "radius": 32 },
+    "Friend-twilight.dc.html": { "x": 1410, "y": 1500, "w": 390, "h": 900, "title": "Pat · Twilight", "radius": 32 },
+    "Stats-twilight.dc.html": { "x": 1880, "y": 1500, "w": 390, "h": 1080, "title": "Steven · Twilight", "radius": 32 },
+    "Setup-yardage.dc.html": { "x": 0, "y": 3000, "w": 390, "h": 844, "title": "New round · Yardage book", "radius": 32 },
+    "Main-yardage.dc.html": { "x": 470, "y": 3000, "w": 390, "h": 844, "title": "Match play · Yardage book", "radius": 32 },
+    "BestDisc-yardage.dc.html": { "x": 940, "y": 3000, "w": 390, "h": 844, "title": "Best disc · Yardage book", "radius": 32 },
+    "Friend-yardage.dc.html": { "x": 1410, "y": 3000, "w": 390, "h": 900, "title": "Pat · Yardage book", "radius": 32 },
+    "Stats-yardage.dc.html": { "x": 1880, "y": 3000, "w": 390, "h": 1080, "title": "Steven · Yardage book", "radius": 32 }
+  },
+  "order": [
+    "Main.dc.html",
+    "Setup.dc.html",
+    "BestDisc.dc.html",
+    "Friend.dc.html",
+    "Stats.dc.html",
+    "Setup-twilight.dc.html",
+    "Main-twilight.dc.html",
+    "BestDisc-twilight.dc.html",
+    "Friend-twilight.dc.html",
+    "Stats-twilight.dc.html",
+    "Setup-yardage.dc.html",
+    "Main-yardage.dc.html",
+    "BestDisc-yardage.dc.html",
+    "Friend-yardage.dc.html",
+    "Stats-yardage.dc.html"
+  ],
+  "notes": {
+    "lookA": { "x": 0, "y": -300, "text": "A · Clubhouse: cream scorecard, bottle green, brass", "kind": "title1", "maxW": 2270 },
+    "lookB": { "x": 0, "y": 1200, "text": "B · Twilight: deep green, champagne, ivory", "kind": "title1", "maxW": 2270 },
+    "lookC": { "x": 0, "y": 2700, "text": "C · Yardage book: white, ink navy, fairway green", "kind": "title1", "maxW": 2270 },
+    "howto": {
+      "x": -580,
+      "y": 0,
+      "w": 480,
+      "size": "m",
+      "text": "How to read this\n\n• Each row is one look, each column one screen. Pick a row, or mix (one row's colours with another's type).\n• Every screen has a Look switch under Tweaks.\n• Best disc is drawn as doubles: two-player teams, both throw, play the better disc, one score per team per hole. Tell me if you meant something else.\n• \"Disc used\" on the Best disc card is optional; drop it if it's fussy.\n• Stats becomes Players: your page is your stats, and each friend gets a page with your head-to-head record.\n• Classic is the match play card without the match banner.\n• All names and numbers are sample data."
+    }
+  },
+  "designSystems": []
+}

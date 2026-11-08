@@ -73,3 +73,5 @@ To try the app by hand against made-up data, open `harness.html?seed=<name>`. Th
 | `test/make_harness.py` | Builds `test/harness.html`, the app with the stand-in loaded first |
 | `test/tests.html`, `test/tests.js` | The browser checks |
 | `FINDINGS.md` | The bugs found in the first version, how each was reproduced, and how it was fixed |
+| `REDESIGN.md` | The agreed redesign (opponents, friends' history, the Clubhouse look) and its build order |
+| `design/canvas/` | Source of the redesign mock-ups, for reference |

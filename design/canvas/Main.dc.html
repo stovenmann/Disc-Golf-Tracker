@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Match play scorecard</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&amp;family=Archivo+Narrow:wght@500;600;700&amp;family=DM+Mono:wght@400;500&amp;family=Inter:wght@400;500;600;700&amp;family=Libre+Caslon+Text:wght@400;700&amp;family=Manrope:wght@400;500;600;700&amp;family=Marcellus&amp;display=swap">
+<style>
+body{margin:0}
+a{color:inherit}a:hover{opacity:.8}
+button{font:inherit;cursor:pointer}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; display: flex; flex-direction: column; background: {{t.bg}}; color: {{t.ink}}; font-family: {{t.ui}}; overflow: hidden">
+
+  <header style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 24px 20px 10px">
+    <div style="display: flex; flex-direction: column; gap: 3px; min-width: 0">
+      <span style="font-size: 11px; font-weight: 600; letter-spacing: {{t.track}}; text-transform: uppercase; color: {{t.brass}}">Brandywine Creek · Par 54</span>
+      <span style="font-family: {{t.display}}; text-transform: {{t.displayCase}}; letter-spacing: {{t.displayTrack}}; font-size: 26px; line-height: 1.1">Match play</span>
+    </div>
+    <div style="display: flex; gap: 8px">
+      <button aria-label="Course map" style="width: 44px; height: 44px; border-radius: {{t.pill}}; border: 1px solid {{t.line}}; background: {{t.surface}}; color: {{t.ink}}; display: flex; align-items: center; justify-content: center; padding: 0">
+        <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"></path><path d="M9 4v14M15 6v14"></path></svg>
+      </button>
+      <button aria-label="Round options: pause, finish early, discard" style="width: 44px; height: 44px; border-radius: {{t.pill}}; border: 1px solid {{t.line}}; background: {{t.surface}}; color: {{t.ink}}; display: flex; align-items: center; justify-content: center; padding: 0">
+        <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="19" cy="12" r="1.6"></circle></svg>
+      </button>
+    </div>
+  </header>
+
+  <section style="margin: 6px 20px 0; padding: 18px 18px 16px; background: {{t.surface}}; border: 1px solid {{t.line}}; border-radius: {{t.radius}}; display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 12px">
+      <div style="display: flex; flex-direction: column; gap: 5px">
+        <span style="font-size: 11px; font-weight: 600; letter-spacing: {{t.track}}; text-transform: uppercase; color: {{t.muted}}">Steven v Pat</span>
+        <span style="font-family: {{t.display}}; text-transform: {{t.displayCase}}; letter-spacing: {{t.displayTrack}}; font-size: 34px; line-height: 1; color: {{t.under}}">Steven 2 up</span>
+        <span style="font-size: 13px; color: {{t.ink2}}">with 12 to play · thru 6</span>
+      </div>
+      <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 3px">
+        <span style="font-size: 11px; font-weight: 600; letter-spacing: {{t.track}}; text-transform: uppercase; color: {{t.muted}}">Strokes</span>
+        <span style="font-family: {{t.num}}; font-size: 16px; color: {{t.ink2}}">18 v 20</span>
+      </div>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); row-gap: 10px; column-gap: 4px">
+      <sc-for list="{{holes}}" as="h" hint-placeholder-count="18">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 3px">
+          <span style="{{h.numStyle}}">{{h.n}}</span>
+          <span style="{{h.markStyle}}">{{h.mark}}</span>
+        </div>
+      </sc-for>
+    </div>
+    <div style="display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: {{t.ink2}}">
+      <span style="display: flex; align-items: center; gap: 6px"><span style="width: 12px; height: 12px; border-radius: 50%; background: {{t.under}}"></span>Steven won</span>
+      <span style="display: flex; align-items: center; gap: 6px"><span style="width: 12px; height: 12px; box-sizing: border-box; border-radius: 3px; border: 1.5px solid {{t.over}}"></span>Pat won</span>
+      <span style="display: flex; align-items: center; gap: 6px"><span style="width: 12px; height: 12px; box-sizing: border-box; border-radius: 50%; border: 1px dashed {{t.muted}}"></span>Halved</span>
+    </div>
+  </section>
+
+  <section style="margin: 12px 20px 0; padding: 16px 18px 14px; background: {{t.surface}}; border: 1px solid {{t.line}}; border-radius: {{t.radius}}">
+    <div style="display: flex; align-items: baseline; justify-content: center; gap: 12px; padding-bottom: 10px">
+      <span style="font-family: {{t.display}}; text-transform: {{t.displayCase}}; letter-spacing: {{t.displayTrack}}; font-size: 40px; line-height: 1">Hole 7</span>
+      <span style="font-size: 15px; font-weight: 600; color: {{t.ink2}}">Par 3</span>
+    </div>
+    <sc-for list="{{rows}}" as="p" hint-placeholder-count="2">
+      <div style="display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; align-items: center; gap: 10px; padding: 12px 0; border-top: 1px solid {{t.line}}">
+        <div style="display: flex; flex-direction: column; gap: 2px; min-width: 0">
+          <span style="font-weight: 600; font-size: 16px">{{p.name}}</span>
+          <span style="font-size: 12.5px; color: {{t.muted}}">{{p.sub}}</span>
+        </div>
+        <button aria-label="One fewer stroke for {{p.name}}" style="{{stepStyle}}">−</button>
+        <div style="width: 60px; display: flex; flex-direction: column; align-items: center; gap: 3px">
+          <span style="font-family: {{t.num}}; font-size: 34px; line-height: 1">{{p.score}}</span>
+          <span style="{{p.labelStyle}}">{{p.label}}</span>
+        </div>
+        <button aria-label="One more stroke for {{p.name}}" style="{{stepStyle}}">+</button>
+      </div>
+    </sc-for>
+    <div style="margin-top: 4px; padding: 11px 12px; border-radius: 10px; background: {{t.soft}}; font-size: 14px; text-align: center">Steven takes the hole · <strong>3 up</strong> with 11 to play</div>
+  </section>
+
+  <div style="display: flex; gap: 10px; margin: 14px 20px 0">
+    <button style="flex: 1; min-height: 52px; border-radius: {{t.pill}}; border: 1px solid {{t.line}}; background: {{t.surface}}; color: {{t.ink}}; font-size: 15px; font-weight: 600">‹ Hole 6</button>
+    <button style="flex: 2; min-height: 52px; border-radius: {{t.pill}}; border: 1px solid {{t.accent}}; background: {{t.accent}}; color: {{t.onAccent}}; font-size: 15px; font-weight: 600">Next hole ›</button>
+  </div>
+
+  <div style="flex: 1"></div>
+
+  <nav aria-label="Sections" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid {{t.line}}; background: {{t.tabBg}}; padding: 8px 6px 24px">
+    <button aria-current="page" style="{{tab.play}}"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21V4"></path><path d="M6 4h11l-2.5 4L17 12H6"></path></svg>Play</button>
+    <button style="{{tab.rounds}}"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"></rect><path d="M8 8h8M8 12h8M8 16h5"></path></svg>Rounds</button>
+    <button style="{{tab.players}}"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"></circle><path d="M3.5 19c.8-3.2 3-5 5.5-5s4.7 1.8 5.5 5"></path><circle cx="17" cy="9" r="2.5"></circle><path d="M15.5 14.2c2.3.2 4 1.8 4.6 4.8"></path></svg>Players</button>
+    <button style="{{tab.courses}}"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"></path><path d="M9 4v14M15 6v14"></path></svg>Courses</button>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"look":{"editor":"enum","options":["clubhouse","twilight","yardage"],"default":"clubhouse"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  theme() {
+    const L = {
+      clubhouse: { bg: '#F3EEE2', surface: '#FBF8F1', ink: '#1C2A21', ink2: '#4C574F', muted: '#686D61', line: '#E0D8C7', accent: '#1F4A34', onAccent: '#F8F3E7', active: '#1F4A34', soft: '#E7ECE2', brass: '#83673A', under: '#1F4A34', onUnder: '#F8F3E7', over: '#984A2C', mixPar: '#D3CAB4', mixBogey: '#C68B69', tabBg: '#FBF8F1', display: "'Libre Caslon Text', Georgia, serif", displayCase: 'none', displayTrack: '0', ui: "'Inter', system-ui, sans-serif", num: "'Libre Caslon Text', Georgia, serif", radius: '14px', pill: '999px', stepRadius: '50%', track: '0.14em' },
+      twilight: { bg: '#0E1511', surface: '#16201A', ink: '#EFE9DB', ink2: '#BDB6A6', muted: '#948E80', line: '#2A362E', accent: '#CBAA6C', onAccent: '#1A1408', active: '#CBAA6C', soft: '#202B23', brass: '#CBAA6C', under: '#8CC9A2', onUnder: '#0E1511', over: '#DE8A5E', mixPar: '#46524A', mixBogey: '#9C6646', tabBg: '#111914', display: "'Marcellus', Georgia, serif", displayCase: 'none', displayTrack: '0.02em', ui: "'Manrope', system-ui, sans-serif", num: "'Marcellus', Georgia, serif", radius: '16px', pill: '999px', stepRadius: '50%', track: '0.18em' },
+      yardage: { bg: '#F6F6F1', surface: '#FFFFFF', ink: '#14212C', ink2: '#3E4B56', muted: '#5F6B75', line: '#DCE0DA', accent: '#14212C', onAccent: '#FFFFFF', active: '#245A39', soft: '#EAF0E8', brass: '#245A39', under: '#245A39', onUnder: '#FFFFFF', over: '#B9502B', mixPar: '#CDD4CC', mixBogey: '#E2A182', tabBg: '#FFFFFF', display: "'Archivo Narrow', 'Arial Narrow', sans-serif", displayCase: 'uppercase', displayTrack: '0.01em', ui: "'Archivo', system-ui, sans-serif", num: "'DM Mono', ui-monospace, monospace", radius: '6px', pill: '6px', stepRadius: '8px', track: '0.08em' }
+    };
+    return L[this.props.look] || L.clubhouse;
+  }
+  tabs(t, on) {
+    const base = 'display: flex; flex-direction: column; align-items: center; gap: 4px; min-height: 52px; padding: 6px 0; border: none; background: none; font-size: 11.5px; letter-spacing: 0.02em; ';
+    const one = (k) => base + (k === on ? 'font-weight: 700; color: ' + t.active : 'font-weight: 500; color: ' + t.muted);
+    return { play: one('play'), rounds: one('rounds'), players: one('players'), courses: one('courses') };
+  }
+  renderVals() {
+    const t = this.theme();
+    const results = { 1: 'S', 2: 'H', 3: 'P', 4: 'S', 5: 'S', 6: 'H' };
+    const current = 7;
+    const box = 'width: 28px; height: 28px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; ';
+    const holes = [];
+    for (let n = 1; n <= 18; n++) {
+      const r = results[n];
+      let markStyle = box + 'border-radius: 50%; border: 1px solid ' + t.line;
+      let mark = '';
+      if (r === 'S') { markStyle = box + 'border-radius: 50%; background: ' + t.under + '; color: ' + t.onUnder; mark = 'S'; }
+      else if (r === 'P') { markStyle = box + 'border-radius: 6px; border: 1.5px solid ' + t.over + '; color: ' + t.over; mark = 'P'; }
+      else if (r === 'H') { markStyle = box + 'border-radius: 50%; border: 1px dashed ' + t.muted + '; color: ' + t.ink2 + '; font-weight: 600'; mark = '½'; }
+      else if (n === current) { markStyle = box + 'border-radius: 50%; border: 2px solid ' + t.ink; }
+      const numStyle = 'font-size: 10px; font-family: ' + t.num + '; font-weight: ' + (n === current ? '700; color: ' + t.ink : '500; color: ' + t.muted);
+      holes.push({ n, mark, markStyle, numStyle });
+    }
+    const lbl = (c) => 'font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: ' + c;
+    const rows = [
+      { name: 'Steven', sub: '18 strokes · E thru 6', score: '3', label: 'Par', labelStyle: lbl(t.muted) },
+      { name: 'Pat', sub: '20 strokes · +2 thru 6', score: '4', label: 'Bogey', labelStyle: lbl(t.over) }
+    ];
+    const stepStyle = 'width: 48px; height: 48px; border-radius: ' + t.stepRadius + '; border: 1px solid ' + t.line + '; background: ' + t.bg + '; color: ' + t.ink + '; font-size: 24px; line-height: 1; display: flex; align-items: center; justify-content: center; padding: 0';
+    return { t, holes, rows, stepStyle, tab: this.tabs(t, 'play') };
+  }
+}
+</script>
+</body>
+</html>

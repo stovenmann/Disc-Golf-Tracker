@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Player: Pat</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&amp;family=Archivo+Narrow:wght@500;600;700&amp;family=DM+Mono:wght@400;500&amp;family=Inter:wght@400;500;600;700&amp;family=Libre+Caslon+Text:wght@400;700&amp;family=Manrope:wght@400;500;600;700&amp;family=Marcellus&amp;display=swap">
+<style>
+body{margin:0}
+a{color:inherit}a:hover{opacity:.8}
+button{font:inherit;cursor:pointer}
+</style>
+</helmet>
+<div style="width: 390px; height: 900px; box-sizing: border-box; display: flex; flex-direction: column; background: {{t.bg}}; color: {{t.ink}}; font-family: {{t.ui}}; overflow: hidden">
+
+  <header style="display: flex; align-items: center; justify-content: space-between; padding: 20px 14px 4px">
+    <button style="min-height: 44px; padding: 0 8px; border: none; background: none; color: {{t.active}}; font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 2px">
+      <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg>Players
+    </button>
+    <button style="min-height: 44px; padding: 0 10px; border: none; background: none; color: {{t.active}}; font-size: 15px; font-weight: 600">Edit</button>
+  </header>
+
+  <div style="display: flex; align-items: center; gap: 16px; padding: 4px 20px 14px">
+    <div aria-hidden="true" style="width: 64px; height: 64px; flex: none; box-sizing: border-box; border-radius: 50%; border: 1.5px solid {{t.brass}}; display: flex; align-items: center; justify-content: center; font-family: {{t.display}}; font-size: 28px; color: {{t.brass}}">P</div>
+    <div style="display: flex; flex-direction: column; gap: 3px">
+      <h1 style="margin: 0; font-weight: 400; font-family: {{t.display}}; text-transform: {{t.displayCase}}; letter-spacing: {{t.displayTrack}}; font-size: 32px; line-height: 1">Pat</h1>
+      <span style="font-size: 13px; color: {{t.ink2}}">23 rounds together · since March</span>
+    </div>
+  </div>
+
+  <section style="margin: 0 20px; padding: 16px 18px; background: {{t.surface}}; border: 1px solid {{t.line}}; border-radius: {{t.radius}}; display: flex; flex-direction: column; gap: 12px">
+    <span style="font-size: 11px; font-weight: 600; letter-spacing: {{t.track}}; text-transform: uppercase; color: {{t.muted}}">Head to head with you</span>
+    <div style="display: flex; align-items: baseline; gap: 10px">
+      <span style="font-family: {{t.display}}; text-transform: {{t.displayCase}}; letter-spacing: {{t.displayTrack}}; font-size: 30px; line-height: 1">You lead 13–9</span>
+      <span style="font-size: 13px; color: {{t.muted}}">2 halved</span>
+    </div>
+    <sc-for list="{{formats}}" as="f" hint-placeholder-count="3">
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <div style="display: flex; justify-content: space-between; gap: 10px; font-size: 14px">
+          <span style="font-weight: 600">{{f.name}}</span>
+          <span style="font-family: {{t.num}}; color: {{t.ink2}}">{{f.record}}</span>
+        </div>
+        <div style="display: flex; height: 6px; border-radius: 3px; overflow: hidden; background: {{t.mixPar}}">
+          <span style="{{f.barStyle}}"></span>
+        </div>
+      </div>
+    </sc-for>
+    <div style="font-size: 13px; color: {{t.ink2}}">As best disc partners: won 4, lost 1</div>
+    <div style="display: flex; flex-direction: column; gap: 8px; padding-top: 12px; border-top: 1px solid {{t.line}}">
+      <span style="font-size: 11px; font-weight: 600; letter-spacing: {{t.track}}; text-transform: uppercase; color: {{t.muted}}">Last five</span>
+      <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px">
+        <sc-for list="{{lastFive}}" as="m" hint-placeholder-count="5">
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 4px">
+            <span style="{{m.markStyle}}">{{m.mark}}</span>
+            <span style="font-size: 11px; color: {{t.muted}}">{{m.date}}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <section style="margin: 12px 20px 0; padding: 16px 18px; background: {{t.surface}}; border: 1px solid {{t.line}}; border-radius: {{t.radius}}; display: flex; flex-direction: column; gap: 12px">
+    <span style="font-size: 11px; font-weight: 600; letter-spacing: {{t.track}}; text-transform: uppercase; color: {{t.muted}}">Pat's game</span>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+      <div style="display: flex; flex-direction: column; gap: 2px">
+        <span style="font-family: {{t.num}}; font-size: 24px; line-height: 1.1">+3.4</span>
+        <span style="font-size: 12px; color: {{t.muted}}">Avg vs par</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 2px">
+        <span style="font-family: {{t.num}}; font-size: 24px; line-height: 1.1; color: {{t.under}}">−2</span>
+        <span style="font-size: 12px; color: {{t.muted}}">Best, Bellevue</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 2px">
+        <span style="font-family: {{t.num}}; font-size: 24px; line-height: 1.1">23</span>
+        <span style="font-size: 12px; color: {{t.muted}}">Rounds</span>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 4px">
+      <svg role="img" aria-label="Pat's last 10 rounds against par, from +5 down to +2" width="310" height="64" viewBox="0 0 310 64">
+        <line x1="0" x2="310" y1="{{spark.parY}}" y2="{{spark.parY}}" stroke="{{t.line}}" stroke-width="1" stroke-dasharray="4 4"></line>
+        <path d="{{spark.line}}" fill="none" stroke="{{t.ink2}}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path>
+        <circle cx="{{spark.lastX}}" cy="{{spark.lastY}}" r="4" fill="{{t.ink}}"></circle>
+      </svg>
+      <span style="font-size: 12px; color: {{t.muted}}">Last 10 rounds · dashed line is par</span>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <div style="display: flex; height: 10px; border-radius: 5px; overflow: hidden">
+        <sc-for list="{{mix}}" as="x" hint-placeholder-count="4">
+          <span style="{{x.style}}"></span>
+        </sc-for>
+      </div>
+      <span style="font-size: 12.5px; color: {{t.ink2}}">Birdie 12% · Par 51% · Bogey 28% · Double+ 9%</span>
+    </div>
+  </section>
+
+  <div style="flex: 1"></div>
+
+  <nav aria-label="Sections" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid {{t.line}}; background: {{t.tabBg}}; padding: 8px 6px 24px">
+    <button style="{{tab.play}}"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21V4"></path><path d="M6 4h11l-2.5 4L17 12H6"></path></svg>Play</button>
+    <button style="{{tab.rounds}}"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"></rect><path d="M8 8h8M8 12h8M8 16h5"></path></svg>Rounds</button>
+    <button aria-current="page" style="{{tab.players}}"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"></circle><path d="M3.5 19c.8-3.2 3-5 5.5-5s4.7 1.8 5.5 5"></path><circle cx="17" cy="9" r="2.5"></circle><path d="M15.5 14.2c2.3.2 4 1.8 4.6 4.8"></path></svg>Players</button>
+    <button style="{{tab.courses}}"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"></path><path d="M9 4v14M15 6v14"></path></svg>Courses</button>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"look":{"editor":"enum","options":["clubhouse","twilight","yardage"],"default":"clubhouse"},"$preview":{"width":390,"height":900}}'>
+class Component extends DCLogic {
+  theme() {
+    const L = {
+      clubhouse: { bg: '#F3EEE2', surface: '#FBF8F1', ink: '#1C2A21', ink2: '#4C574F', muted: '#686D61', line: '#E0D8C7', accent: '#1F4A34', onAccent: '#F8F3E7', active: '#1F4A34', soft: '#E7ECE2', brass: '#83673A', under: '#1F4A34', onUnder: '#F8F3E7', over: '#984A2C', mixPar: '#D3CAB4', mixBogey: '#C68B69', tabBg: '#FBF8F1', display: "'Libre Caslon Text', Georgia, serif", displayCase: 'none', displayTrack: '0', ui: "'Inter', system-ui, sans-serif", num: "'Libre Caslon Text', Georgia, serif", radius: '14px', pill: '999px', stepRadius: '50%', track: '0.14em' },
+      twilight: { bg: '#0E1511', surface: '#16201A', ink: '#EFE9DB', ink2: '#BDB6A6', muted: '#948E80', line: '#2A362E', accent: '#CBAA6C', onAccent: '#1A1408', active: '#CBAA6C', soft: '#202B23', brass: '#CBAA6C', under: '#8CC9A2', onUnder: '#0E1511', over: '#DE8A5E', mixPar: '#46524A', mixBogey: '#9C6646', tabBg: '#111914', display: "'Marcellus', Georgia, serif", displayCase: 'none', displayTrack: '0.02em', ui: "'Manrope', system-ui, sans-serif", num: "'Marcellus', Georgia, serif", radius: '16px', pill: '999px', stepRadius: '50%', track: '0.18em' },
+      yardage: { bg: '#F6F6F1', surface: '#FFFFFF', ink: '#14212C', ink2: '#3E4B56', muted: '#5F6B75', line: '#DCE0DA', accent: '#14212C', onAccent: '#FFFFFF', active: '#245A39', soft: '#EAF0E8', brass: '#245A39', under: '#245A39', onUnder: '#FFFFFF', over: '#B9502B', mixPar: '#CDD4CC', mixBogey: '#E2A182', tabBg: '#FFFFFF', display: "'Archivo Narrow', 'Arial Narrow', sans-serif", displayCase: 'uppercase', displayTrack: '0.01em', ui: "'Archivo', system-ui, sans-serif", num: "'DM Mono', ui-monospace, monospace", radius: '6px', pill: '6px', stepRadius: '8px', track: '0.08em' }
+    };
+    return L[this.props.look] || L.clubhouse;
+  }
+  tabs(t, on) {
+    const base = 'display: flex; flex-direction: column; align-items: center; gap: 4px; min-height: 52px; padding: 6px 0; border: none; background: none; font-size: 11.5px; letter-spacing: 0.02em; ';
+    const one = (k) => base + (k === on ? 'font-weight: 700; color: ' + t.active : 'font-weight: 500; color: ' + t.muted);
+    return { play: one('play'), rounds: one('rounds'), players: one('players'), courses: one('courses') };
+  }
+  renderVals() {
+    const t = this.theme();
+    const bar = (share) => 'display: block; height: 100%; width: ' + share + '%; background: ' + t.under;
+    const formats = [
+      { name: 'Classic', record: 'You 8 · Pat 5', barStyle: bar(62) },
+      { name: 'Match play', record: 'You 3 · Pat 2 · 2 halved', barStyle: bar(60) },
+      { name: 'Best disc, as opponents', record: 'You 2 · Pat 2', barStyle: bar(50) }
+    ];
+    const box = 'width: 30px; height: 30px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; ';
+    const win = box + 'border-radius: 50%; background: ' + t.under + '; color: ' + t.onUnder;
+    const loss = box + 'border-radius: 6px; border: 1.5px solid ' + t.over + '; color: ' + t.over;
+    const lastFive = [
+      { mark: 'W', markStyle: win, date: 'Oct 31' },
+      { mark: 'L', markStyle: loss, date: 'Oct 24' },
+      { mark: 'W', markStyle: win, date: 'Oct 17' },
+      { mark: 'W', markStyle: win, date: 'Oct 10' },
+      { mark: 'L', markStyle: loss, date: 'Oct 3' }
+    ];
+    const vals = [5, 4, 6, 3, 4, 2, 3, 1, 4, 2];
+    const y = (v) => 4 + (7 - v) * (56 / 8);
+    const x = (i) => 6 + i * (298 / (vals.length - 1));
+    const line = vals.map((v, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(v).toFixed(1)).join(' ');
+    const spark = { line, parY: y(0).toFixed(1), lastX: x(vals.length - 1).toFixed(1), lastY: y(vals[vals.length - 1]).toFixed(1) };
+    const seg = (w, c) => ({ style: 'display: block; height: 100%; width: ' + w + '%; background: ' + c });
+    const mix = [seg(12, t.under), seg(51, t.mixPar), seg(28, t.mixBogey), seg(9, t.over)];
+    return { t, formats, lastFive, spark, mix, tab: this.tabs(t, 'players') };
+  }
+}
+</script>
+</body>
+</html>
