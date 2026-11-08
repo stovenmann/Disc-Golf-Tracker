@@ -590,6 +590,7 @@ const state = {
 };
 let DB = null;
 let ASSETS = null;
+let shownHole = null;     // round and hole on screen at the last render
 (async function initAssets() {
   try {
     if (window.claude && typeof window.claude.use === "function") {
@@ -662,57 +663,125 @@ function deepClone(o) {
   try { return structuredClone(o); } catch (e) { return JSON.parse(JSON.stringify(o)); }
 }
 
-/* ================= persistence ================= */
-const saveTimers = {}, inFlight = {}, dirty = {};
-function pendingIds() {
-  const ids = new Set();
-  Object.keys(saveTimers).forEach(k => ids.add(k.split("/")[1]));
-  Object.keys(inFlight).forEach(k => { if (inFlight[k]) ids.add(k.split("/")[1]); });
-  return ids;
+/* ================= persistence =================
+   Every change goes into an outbox first, kept in memory and (when the browser allows) in
+   localStorage, so a score survives a dropped connection or the app being closed. Each
+   outbox entry is sent to the db, one write at a time per document, and removed only once
+   the store confirms it. Failed writes retry with backoff, and at once when the phone comes
+   back online. Snapshots never overwrite a document still in the outbox, and they redraw
+   the screen only when they change what is shown. */
+const OUTBOX_KEY = "dg.outbox.v1";
+const SAVE_DELAY = 700;
+const saveTimers = {}, inFlight = {}, retryTimers = {}, retryCount = {}, syncWaiters = {};
+let outbox = readOutbox();
+let syncTrouble = false;
+function readOutbox() {
+  try {
+    const o = JSON.parse(localStorage.getItem(OUTBOX_KEY) || "{}");
+    return o && typeof o === "object" && !Array.isArray(o) ? o : {};
+  } catch (e) { return {}; }
+}
+function writeOutbox() {
+  try {
+    if (Object.keys(outbox).length) localStorage.setItem(OUTBOX_KEY, JSON.stringify(outbox));
+    else localStorage.removeItem(OUTBOX_KEY);
+  } catch (e) { /* storage unavailable: the outbox still covers this visit */ }
+}
+const listFor = (kind) => (kind === "rounds" ? state.rounds : state.courses);
+function queue(key, entry) {
+  const prev = outbox[key];
+  outbox[key] = Object.assign({ v: prev ? prev.v + 1 : 1 }, entry);
+  writeOutbox();
 }
 function scheduleSave(kind, id, immediate) {
-  if (!DB || state.readOnly) return;
-  const key = kind + "/" + id;
-  clearTimeout(saveTimers[key]);
-  if (immediate) { delete saveTimers[key]; flushSave(kind, id); return; }
-  saveTimers[key] = setTimeout(() => { delete saveTimers[key]; flushSave(kind, id); }, 700);
-}
-async function flushSave(kind, id) {
-  const key = kind + "/" + id;
-  if (inFlight[key]) { dirty[key] = true; return; }
-  const list = kind === "rounds" ? state.rounds : state.courses;
-  const obj = list.find(x => x.id === id);
+  if (state.readOnly) return;
+  const obj = listFor(kind).find(x => x.id === id);
   if (!obj) return;
-  inFlight[key] = true;
-  try {
-    const data = Object.assign({}, obj);
-    delete data.id;
-    await DB.doc(key).set(data);
-  } catch (e) {
-    writeErr(e);
-  } finally {
-    inFlight[key] = false;
-    if (dirty[key]) { dirty[key] = false; flushSave(kind, id); }
-  }
+  const key = kind + "/" + id;
+  const data = deepClone(obj);
+  delete data.id;
+  queue(key, { data });
+  clearTimeout(saveTimers[key]); delete saveTimers[key];
+  if (immediate) flushSave(key);
+  else saveTimers[key] = setTimeout(() => { delete saveTimers[key]; flushSave(key); }, SAVE_DELAY);
 }
-async function deleteDoc(kind, id) {
-  const list = kind === "rounds" ? state.rounds : state.courses;
+function deleteDoc(kind, id) {
+  const list = listFor(kind);
   const i = list.findIndex(x => x.id === id);
   if (i >= 0) list.splice(i, 1);
-  render();
-  if (!DB || state.readOnly) return;
-  try { await DB.doc(kind + "/" + id).delete(); } catch (e) { writeErr(e); }
-}
-function writeErr(e) {
-  const code = e && (e.code || e.message || "");
-  if (String(code).indexOf("not_granted") >= 0 || String(code).indexOf("not_writer") >= 0) {
-    state.readOnly = true;
-    toast("You have view-only access — changes stay on this screen.");
-  } else {
-    toast("Save didn't go through. It'll retry on your next change.");
+  if (!state.readOnly) {
+    const key = kind + "/" + id;
+    queue(key, { del: true });
+    clearTimeout(saveTimers[key]); delete saveTimers[key];
+    flushSave(key);
   }
   render();
 }
+async function flushSave(key) {
+  clearTimeout(retryTimers[key]); delete retryTimers[key];
+  const entry = outbox[key];
+  if (!entry || !DB || state.readOnly || inFlight[key]) return;
+  inFlight[key] = true;
+  let ok = false, err = null;
+  try {
+    if (entry.del) await DB.doc(key).delete(); else await DB.doc(key).set(entry.data);
+    ok = true;
+  } catch (e) { err = e; }
+  inFlight[key] = false;
+  if (!ok) { settle(key, false); writeFailed(key, err); return; }
+  retryCount[key] = 0;
+  if (outbox[key] && outbox[key].v === entry.v) { delete outbox[key]; writeOutbox(); }
+  if (outbox[key]) { if (!saveTimers[key]) flushSave(key); return; } // changed meanwhile: send the newer version
+  settle(key, true);
+  if (syncTrouble && !Object.keys(outbox).length) { syncTrouble = false; renderSync(); }
+}
+/* codes after which this view will never be allowed to write (view-only, or access withdrawn) */
+const WRITE_REFUSED = ["invalid_argument", "not_granted", "capability_disabled", "capability_removed", "transform_error", "revoked"];
+function writeFailed(key, e) {
+  const code = String((e && e.code) || "");
+  if (WRITE_REFUSED.indexOf(code) >= 0) {
+    // nothing queued can ever save from this view: drop it, or every later visit would retry and be refused
+    outbox = {};
+    writeOutbox();
+    Object.keys(retryTimers).forEach(k => { clearTimeout(retryTimers[k]); delete retryTimers[k]; });
+    if (!state.readOnly) {
+      state.readOnly = true;
+      Object.keys(saveTimers).forEach(k => { clearTimeout(saveTimers[k]); delete saveTimers[k]; });
+      toast("You have view-only access — changes stay on this screen.");
+      render();
+    }
+    return;
+  }
+  if (code === "quota_exceeded") { toast("Saved data is full — delete some old rounds so new ones can save."); return; }
+  // anything else is treated as a dropped connection: keep the change and try again
+  if (!syncTrouble) {
+    syncTrouble = true;
+    renderSync();
+    toast("No connection — scores are kept on this phone and save when you're back online.");
+  }
+  const n = retryCount[key] = (retryCount[key] || 0) + 1;
+  const delay = Math.min(30000, 2000 * Math.pow(2, n - 1)) * (0.85 + Math.random() * 0.3);
+  retryTimers[key] = setTimeout(() => { delete retryTimers[key]; flushSave(key); }, delay);
+}
+function flushAll() {
+  Object.keys(outbox).forEach(key => { if (!saveTimers[key]) { retryCount[key] = 0; flushSave(key); } });
+}
+/* resolves true once this document's queued changes are confirmed, false on a failed attempt */
+function whenSynced(key) {
+  return new Promise(res => { (syncWaiters[key] = syncWaiters[key] || []).push(res); });
+}
+function settle(key, ok) {
+  const waiting = syncWaiters[key];
+  delete syncWaiters[key];
+  if (waiting) waiting.forEach(fn => fn(ok));
+}
+window.addEventListener("online", flushAll);
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") {
+    // leaving the app: send what's waiting on the save delay now
+    Object.keys(saveTimers).forEach(key => { clearTimeout(saveTimers[key]); delete saveTimers[key]; flushSave(key); });
+  } else flushAll();
+});
 function snapToArr(s) {
   try {
     if (s && Array.isArray(s.docs)) return s.docs.map(d => Object.assign({ id: d.id }, deepClone(typeof d.data === "function" ? d.data() : d.data)));
@@ -720,13 +789,56 @@ function snapToArr(s) {
   } catch (err) { /* fall through */ }
   return [];
 }
+/* documents still in the outbox keep their local copy (or stay deleted) whatever the store says */
 function mergeSnap(kind, arr) {
-  const keep = pendingIds();
-  const local = (kind === "rounds" ? state.rounds : state.courses).filter(x => keep.has(x.id));
-  const localIds = new Set(local.map(x => x.id));
-  const merged = arr.filter(x => !localIds.has(x.id)).concat(local);
+  const pending = new Set(Object.keys(outbox).filter(k => k.split("/")[0] === kind).map(k => k.split("/")[1]));
+  const local = listFor(kind).filter(x => pending.has(x.id));
+  const merged = arr.filter(x => !pending.has(x.id)).concat(local);
   if (kind === "rounds") state.rounds = merged; else state.courses = merged;
 }
+/* order-independent fingerprint of a collection, to tell a real change from a save's own echo */
+function stable(v) {
+  if (Array.isArray(v)) return "[" + v.map(stable).join(",") + "]";
+  if (v && typeof v === "object") {
+    return "{" + Object.keys(v).filter(k => v[k] !== undefined).sort().map(k => JSON.stringify(k) + ":" + stable(v[k])).join(",") + "}";
+  }
+  return JSON.stringify(v === undefined ? null : v);
+}
+function collectionKey(kind) {
+  return stable(listFor(kind).slice().sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)));
+}
+/* changes this device never got to save on an earlier visit come back first */
+(function restoreOutbox() {
+  Object.keys(outbox).forEach(key => {
+    const parts = key.split("/"), e = outbox[key];
+    if (parts.length !== 2 || (parts[0] !== "rounds" && parts[0] !== "courses") || !e) { delete outbox[key]; return; }
+    if (!e.del && e.data) listFor(parts[0]).push(Object.assign({ id: parts[1] }, deepClone(e.data)));
+  });
+  writeOutbox();
+})();
+
+/* ---------- opening a round ---------- */
+function firstOpenHole(r) {
+  const i = r.pars.findIndex((_, h) => r.players.some((_, pi) => typeof (((r.scores || {})[pi] || [])[h]) !== "number"));
+  return i < 0 ? r.pars.length - 1 : i;
+}
+function openRound(r) {
+  state.activeRoundId = r.id;
+  state.holeIdx = firstOpenHole(r);
+  state.tab = "play";
+}
+/* Reopen the round in progress on first load only. Once the user has tapped anything, or the
+   store has given its first definitive answer, it never pulls them back into a round. */
+let autoResume = true;
+function tryAutoResume() {
+  if (!autoResume || state.activeRoundId || state.setup || state.tab !== "play") return false;
+  const act = state.rounds.filter(r => r.status === "active").sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""))[0];
+  if (!act) return false;
+  openRound(act);
+  autoResume = false;
+  return true;
+}
+tryAutoResume();
 
 (async function initDb() {
   try {
@@ -737,24 +849,30 @@ function mergeSnap(kind, arr) {
     if (!db) { state.dbStatus = "local"; state.loaded = true; render(); return; }
     DB = db;
     state.dbStatus = "connected";
-    const timer = setTimeout(() => { state.loaded = true; render(); }, 10000);
-    let got = 0;
-    const arrived = () => { got++; if (got >= 2) { clearTimeout(timer); state.loaded = true; } render(); };
-    db.collection("courses").onSnapshot(
-      s => { mergeSnap("courses", snapToArr(s)); arrived(); },
-      () => { arrived(); }
-    );
-    db.collection("rounds").onSnapshot(
+    flushAll(); // anything queued before the db answered, or left from an earlier visit
+    const seen = {};
+    const timer = setTimeout(() => { if (!state.loaded) { state.loaded = true; render(); } }, 10000);
+    const arrived = (kind, changed) => {
+      seen[kind] = true;
+      const wasLoaded = state.loaded;
+      if (seen.courses && seen.rounds) { clearTimeout(timer); state.loaded = true; }
+      if (changed || state.loaded !== wasLoaded) render(); else renderSync();
+    };
+    const listen = (kind) => db.collection(kind).onSnapshot(
       s => {
-        mergeSnap("rounds", snapToArr(s));
-        if (!state.activeRoundId) {
-          const act = state.rounds.filter(r => r.status === "active").sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""))[0];
-          if (act && state.tab === "play" && !state.setup) state.activeRoundId = act.id;
+        const before = collectionKey(kind);
+        mergeSnap(kind, snapToArr(s));
+        let changed = collectionKey(kind) !== before;
+        if (kind === "rounds") {
+          if (tryAutoResume()) changed = true;
+          if (!(s && s.metadata && s.metadata.fromCache)) autoResume = false;
         }
-        arrived();
+        arrived(kind, changed);
       },
-      () => { arrived(); }
+      () => { arrived(kind, false); }
     );
+    listen("courses");
+    listen("rounds");
   } catch (e) {
     state.dbStatus = "local"; state.loaded = true; render();
   }
@@ -770,10 +888,16 @@ function render() {
   else if (state.tab === "history") m.innerHTML = viewHistory();
   else m.innerHTML = viewStats();
   if (state.tab === "stats") wireChart();
-  const curChip = $(".holestrip .cur");
-  if (curChip && typeof curChip.scrollIntoView === "function") {
-    try { curChip.scrollIntoView({ inline: "center", block: "nearest" }); } catch (e) { /* older browsers */ }
+  // centre the current hole in the strip, scrolling only the strip (never the card or the page)
+  const strip = $(".holestrip"), curChip = $(".holestrip .cur");
+  if (strip && curChip) {
+    const s = strip.getBoundingClientRect(), c = curChip.getBoundingClientRect();
+    strip.scrollLeft += (c.left - s.left) - (strip.clientWidth - c.width) / 2;
   }
+  // a new hole, or a round just opened, starts at the top of the card; other redraws stay put
+  const hole = state.tab === "play" && state.activeRoundId ? state.activeRoundId + ":" + state.holeIdx : null;
+  if (hole && hole !== shownHole) m.scrollTop = 0;
+  shownHole = hole;
 }
 function renderTabs() {
   const tabs = [
@@ -790,6 +914,7 @@ function renderSync() {
   const n = $("#syncnote");
   if (state.dbStatus === "local") n.textContent = "offline — not saved";
   else if (state.readOnly) n.textContent = "view only";
+  else if (syncTrouble && Object.keys(outbox).length) n.textContent = "no connection — kept on this phone";
   else if (state.dbStatus === "connecting") n.textContent = "connecting…";
   else n.textContent = "";
 }
@@ -975,7 +1100,8 @@ function viewHistory() {
     const line = r.players.map((p, i) => {
       const t = totals(r, i);
       const cls = t.toPar < 0 ? "good" : t.toPar > 0 ? "bad" : "";
-      return `<span class="pscore">${esc(p)} <span class="pm ${cls}">${t.strokes} (${fmtPar(t.toPar)})</span></span>`;
+      const thru = t.played < r.pars.length ? ` <span class="tiny">thru ${t.played}</span>` : "";
+      return `<span class="pscore">${esc(p)} <span class="pm ${cls}">${t.strokes} (${fmtPar(t.toPar)})</span>${thru}</span>`;
     }).join("");
     return `<div class="card">
       <button class="spread" style="width:100%;background:none;border:none;padding:0;cursor:pointer;color:inherit;font:inherit;text-align:left" data-act="togglern" data-id="${r.id}" aria-expanded="${open}">
@@ -1030,7 +1156,10 @@ function viewStats() {
   if (!players.length) return html + `<div class="empty">Finish a round and your numbers show up here:<br>best round, average vs par, and the trend.</div>`;
   if (!state.statsPlayer || players.indexOf(state.statsPlayer) < 0) state.statsPlayer = players[0];
   const name = state.statsPlayer;
-  const prs = playerRounds(name);
+  // bests, averages and the trend use complete rounds only: a round finished early isn't comparable
+  const all = playerRounds(name);
+  const prs = all.filter(x => x.t.played === x.r.pars.length);
+  const early = all.length - prs.length;
   if (players.length > 1) {
     html += `<div class="row" style="margin-bottom:10px">${players.map(p =>
       `<button class="chip ${p === name ? "on" : ""}" data-act="statsplayer" data-p="${esc(p)}">${esc(p)}</button>`).join("")}</div>`;
@@ -1042,6 +1171,9 @@ function viewStats() {
     <div class="tile"><div class="v">${best == null ? "–" : fmtPar(best)}</div><div class="k">Best vs par</div></div>
     <div class="tile"><div class="v">${avg == null ? "–" : (avg >= 0 ? "+" : "−") + Math.abs(avg).toFixed(1)}</div><div class="k">Avg vs par</div></div>
   </div>`;
+  if (early) {
+    html += `<p class="tiny" style="padding:0 4px">${early} round${early > 1 ? "s" : ""} finished early ${early > 1 ? "aren't" : "isn't"} counted here.</p>`;
+  }
   if (prs.length >= 2) {
     html += `<div class="card"><div class="spread"><strong>Score vs par by round</strong><span class="tiny">last ${Math.min(prs.length, 20)}</span></div>
       <div class="chartwrap" id="chartwrap">${trendSVG(prs.slice(-20))}<div class="tip" id="charttip"></div></div></div>`;
@@ -1247,28 +1379,33 @@ function wireMapGestures() {
   stage.addEventListener("pointercancel", up);
 }
 async function handleMapFiles(files) {
-  const course = uploadTarget === "editor" ? null : courseForMap();
-  if (uploadTarget === "editor" && !modalCourse) return;
+  const target = uploadTarget;
+  const editing = target === "editor" ? modalCourse : null;
+  const courseId = target === "editor" ? null : mv.courseId;
+  if (target === "editor" && !editing) return;
   if (!ASSETS) { toast("Image upload isn't available right now."); return; }
   toast("Uploading…");
   for (const f of files) {
     try {
       const res = await ASSETS.upload(f);
-      if (uploadTarget === "editor") {
-        modalCourse.mapAssets = modalCourse.mapAssets || [];
-        modalCourse.mapAssets.push(res.id);
-        modalCourse.newAssets = (modalCourse.newAssets || []).concat([res.id]);
-      } else if (course) {
-        course.mapAssets = course.mapAssets || [];
-        course.mapAssets.push(res.id);
+      if (target === "editor") {
+        if (modalCourse !== editing) { ASSETS.delete(res.id).catch(() => {}); continue; } // editor closed mid-upload
+        editing.mapAssets = (editing.mapAssets || []).concat([res.id]);
+        editing.newAssets = (editing.newAssets || []).concat([res.id]);
+      } else {
+        // look the course up after every upload: a save in between replaces the object in state
+        const course = state.courses.find(c => c.id === courseId);
+        if (!course) { ASSETS.delete(res.id).catch(() => {}); continue; }
+        course.mapAssets = (course.mapAssets || []).concat([res.id]);
         scheduleSave("courses", course.id, true);
       }
     } catch (e) {
       toast("Upload failed: " + ((e && e.message) || "try a smaller image"));
     }
   }
-  if (uploadTarget === "editor") { syncModalInputs(); openModal(courseEditorHTML(modalCourse)); }
-  else renderMapView();
+  if (target === "editor") {
+    if (modalCourse === editing) { syncModalInputs(); openModal(courseEditorHTML(editing)); }
+  } else renderMapView();
 }
 
 /* ================= modal & toast ================= */
@@ -1382,7 +1519,14 @@ function finishRound(id) {
         return w.length === 1 ? ` ${w[0]} takes it at ${fmtPar(bestVal)}.` : ` Tied at ${fmtPar(bestVal)}.`;
       })()
     : "";
-  toast("Round saved." + winnerLine);
+  // say "saved" only once the store has it
+  if (DB && !state.readOnly) {
+    whenSynced("rounds/" + r.id).then(ok => toast(ok
+      ? "Round saved." + winnerLine
+      : "Round finished." + winnerLine + " No connection — it saves when you're back online."));
+  } else {
+    toast("Round finished." + winnerLine);
+  }
 }
 function saveCourseFromModal() {
   const name = ($("#cname") ? $("#cname").value : "").trim();
@@ -1446,6 +1590,7 @@ window.addEventListener("error", (e) => {
 document.addEventListener("click", (e) => {
   const el = e.target.closest("[data-act]");
   if (!el) return;
+  autoResume = false; // the user is steering now
   const act = el.getAttribute("data-act");
   const id = el.getAttribute("data-id");
   switch (act) {
@@ -1459,13 +1604,9 @@ document.addEventListener("click", (e) => {
     case "addplayer": addPlayerFromInput(); break;
     case "startround": startRound(); break;
     case "resume": {
-      state.activeRoundId = id;
       const r = state.rounds.find(x => x.id === id);
-      if (r) {
-        let firstOpen = r.pars.findIndex((_, i) => r.players.some((_, pi) => typeof ((r.scores[pi] || [])[i]) !== "number"));
-        state.holeIdx = firstOpen < 0 ? r.pars.length - 1 : firstOpen;
-      }
-      state.tab = "play"; render(); break;
+      if (r) openRound(r);
+      render(); break;
     }
     case "exitround": state.activeRoundId = null; render(); break;
     case "gohole": state.holeIdx = +el.getAttribute("data-i"); render(); break;
@@ -1501,7 +1642,7 @@ document.addEventListener("click", (e) => {
     case "newcourse": modalCourse = { id: null, name: "", pars: Array(18).fill(3), mapUrl: "" }; openModal(courseEditorHTML(modalCourse)); break;
     case "editcourse": {
       const c = state.courses.find(x => x.id === id);
-      if (c) { modalCourse = { id: c.id, name: c.name, pars: c.pars.slice(), mapUrl: c.mapUrl || "" }; openModal(courseEditorHTML(modalCourse)); }
+      if (c) { modalCourse = { id: c.id, name: c.name, pars: c.pars.slice(), mapUrl: c.mapUrl || "", mapAssets: (c.mapAssets || []).slice() }; openModal(courseEditorHTML(modalCourse)); }
       break;
     }
     case "maps": openMapView(el.getAttribute("data-id") || null, el.getAttribute("data-name")); break;
