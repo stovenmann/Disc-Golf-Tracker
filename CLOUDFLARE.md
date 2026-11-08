@@ -50,7 +50,17 @@ one at the workers.dev address is the only one.
     (`wrangler preview` wants a `previews` block this app doesn't use). Steve then set the
     production branch to `live` and turned preview builds off (Settings → Build → Branch
     control). Step 3 below now says to check that after the import.
-- Next: step 5, moving the data.
+- Step 5, moving the data (2026-11-08):
+  - **Export done.** Claude read the old artifact's rounds and courses read-only, straight into
+    files in `export/` (git-ignored), without their contents passing through the conversation.
+    The artifact held 1 course and 1 round, and no map images. `export/disc-golf-backup.json`
+    bundles them into one file.
+  - **Import page built:** `public/import.html`, with 4 checks. It only adds: anything already on
+    the server is left as it is, so running it twice is harmless. It then reads everything back
+    and compares it with the file. A rehearsal on the real file against the stand-in server added
+    1 course and 1 round, and both matched.
+  - Next: publish it, Steve runs it with the backup file, then opens the app to compare. Then
+    delete the import page.
 
 ## Why
 

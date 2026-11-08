@@ -99,14 +99,16 @@ python -m http.server 8766 --bind 127.0.0.1 --directory test
 ```
 
 Then open http://127.0.0.1:8766/tests.html in a browser tab you can see: background tabs slow
-timers and throw the checks off. All 40 should pass:
-- 12 check the Cloudflare Worker (`worker/index.js`) that will serve the app (see `CLOUDFLARE.md`);
-- 28 check the app itself.
+timers and throw the checks off. All 44 should pass:
+- 12 check the Cloudflare Worker (`worker/index.js`) that serves the app (see `CLOUDFLARE.md`);
+- 28 check the app itself;
+- 4 check the one-time import page (`public/import.html`).
 
 Add `?only=<words>` to run some of them, for example `?only=Worker`.
 
-`make_harness.py` also copies the Worker to `test/worker.js`, so the browser can load it as it is,
-and the manifest and icons from `public/` to the same places in `test/`.
+`make_harness.py` also builds `test/import-harness.html` from the import page the same way. It
+copies the Worker to `test/worker.js`, so the browser can load it as it is, and the manifest and
+icons from `public/` to the same places in `test/`.
 Its checks use an in-memory stand-in for Cloudflare's database and file storage, and sign-in
 tokens made with a throwaway key.
 
@@ -139,5 +141,6 @@ To try the app by hand against made-up data, open `harness.html?seed=<name>`. Th
 | `CLOUDFLARE.md` | The approved plan to move the app from a Claude artifact to its own Cloudflare site |
 | `design/canvas/` | Source of the redesign mock-ups, for reference |
 | `public/manifest.webmanifest`, `public/icons/` | The Home Screen name, icons and full-screen setting |
+| `public/import.html` | One-time page that brings rounds and courses over from the old version; delete after the move |
 | `design/app-icon.png` | The icon at full size |
 | `design/app-icon.ps1` | Draws the icon and writes its sizes into `public/icons/` |

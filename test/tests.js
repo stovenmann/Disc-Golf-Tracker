@@ -453,6 +453,117 @@ check("The phone's status bar takes the look's colour, Clubhouse or Twilight", a
   expect("status bar back in Clubhouse", rgb(a, bar(a)), cream);
 });
 
+/* ---------- 10. the one-time import from the old Claude version ---------- */
+// public/import.html, loaded as test/import-harness.html with the same API stand-in.
+// Every name and score here is made up.
+function openImport(query) {
+  return new Promise((resolve) => {
+    const old = document.getElementById("app-frame");
+    if (old) old.remove();
+    const f = document.createElement("iframe");
+    f.id = "app-frame";
+    f.width = 375;
+    f.height = 667;
+    f.src = "import-harness.html?" + query;
+    f.onload = async () => {
+      const win = f.contentWindow, doc = f.contentDocument;
+      for (let i = 0; i < 60 && !win.importReady; i++) await wait(50);
+      resolve({
+        win, doc,
+        mock: win.__mock,
+        $: (s) => doc.querySelector(s),
+        text: () => doc.body.innerText.replace(/\s+/g, " "),
+        async choose(content) {
+          const dt = new win.DataTransfer();
+          const body = typeof content === "string" ? content : JSON.stringify(content);
+          dt.items.add(new win.File([body], "disc-golf-backup.json", { type: "application/json" }));
+          const input = doc.querySelector("#file");
+          input.files = dt.files;
+          input.dispatchEvent(new win.Event("change", { bubbles: true }));
+          for (let i = 0; i < 40 && !win.importChosen; i++) await wait(25);
+        },
+        async run() {
+          if (doc.querySelector("#go").hidden) throw new Error("no Import button: " + doc.body.innerText.replace(/\s+/g, " "));
+          doc.querySelector("#go").click();
+          for (let i = 0; i < 200 && !win.importDone; i++) await wait(50);
+        },
+      });
+    };
+    document.getElementById("stage").appendChild(f);
+  });
+}
+const backupOf = (courses, rounds) => ({ format: "disc-golf-backup", version: 1, exportedAt: "2026-03-14T09:30:00.000Z", courses, rounds });
+const heron = { id: "c_heron", data: { name: "Heron Flats", pars: [4, 3, 3, 5, 3, 4, 3], createdAt: "2025-05-03T13:05:00.000Z" } };
+const quarry = { id: "c_quarry", data: { name: "Old Quarry", pars: [3, 3, 4, 3], createdAt: "2025-06-21T17:40:00.000Z" } };
+const roundOf = (id, course, players, scores, when) => ({
+  id,
+  data: { courseId: course.id, courseName: course.data.name, pars: course.data.pars, players, scores, status: "done", date: when, createdAt: when, finishedAt: when },
+});
+const rOne = roundOf("r_one", heron, ["Avery"], { 0: [5, 3, 4, 6, 2, 4, 3] }, "2025-05-03T14:20:00.000Z");
+const rTwo = roundOf("r_two", heron, ["Avery", "Lee"], { 0: [4, 3, 3, 5, 3, 4, 4], 1: [5, 4, 3, 6, 3, 5, 3] }, "2025-07-12T10:15:00.000Z");
+const rThree = roundOf("r_three", quarry, ["Lee"], { 0: [3, 2, null, null] }, "2025-08-30T18:45:00.000Z");
+const writesIn = (a) => a.mock.log.filter((e) => e.method !== "GET");
+
+check("The one-time import brings over every round and course, and checks each one", async () => {
+  const a = await openImport("seed=empty");
+  await a.choose(backupOf([heron, quarry], [rOne, rTwo, rThree]));
+  expectTrue("it says what's in the file: " + a.text(), /2 courses and 3 rounds/.test(a.text()));
+  await a.run();
+  for (const d of [heron, quarry]) expect("course " + d.id + " on the server", a.mock.peek("courses", d.id), d.data);
+  for (const d of [rOne, rTwo, rThree]) expect("round " + d.id + " on the server", a.mock.peek("rounds", d.id), d.data);
+  expectTrue("it says what it added: " + a.text(), /Added 2 courses and 3 rounds\./.test(a.text()));
+  expectTrue("it checked them against the server: " + a.text(), /All 5 match the file\./.test(a.text()));
+});
+
+check("The import only adds: anything already on the server is left as it is", async () => {
+  const a = await openImport("seed=midround");
+  const maple = a.mock.peek("courses", "c_maple");
+  const mid = a.mock.peek("rounds", "r_mid");
+  // a different version of the course already here (renamed, no map images), the same round
+  // that's already here, and one new round
+  const otherMaple = { id: "c_maple", data: { name: "Maple Hollow, old name", pars: maple.pars, createdAt: maple.createdAt } };
+  await a.choose(backupOf([otherMaple], [{ id: "r_mid", data: mid }, rOne]));
+  await a.run();
+  expect("the course already here is untouched", a.mock.peek("courses", "c_maple"), maple);
+  expect("the round already here is untouched", a.mock.peek("rounds", "r_mid"), mid);
+  expect("the new round is added", a.mock.peek("rounds", "r_one"), rOne.data);
+  expect("only the new round was sent", writesIn(a).map((e) => e.method + " " + e.path), ["PUT /api/docs/rounds/r_one"]);
+  expectTrue("it says what it added: " + a.text(), /Added 1 round\./.test(a.text()));
+  expectTrue("it says what was already here: " + a.text(), /Already here, the same: 1 round\./.test(a.text()));
+  expectTrue("it says what it left alone: " + a.text(), /Left alone, as a different version is already here: 1 course \(c_maple\)\./.test(a.text()));
+});
+
+check("A file that isn't a scorecard backup is turned away, and nothing is sent", async () => {
+  const a = await openImport("seed=empty");
+  const bad = ["not a backup at all", { hello: "world" }, backupOf([{ id: "../x", data: { name: "X", pars: [3] } }], []), backupOf([], [{ id: "r_x", data: "scores" }])];
+  for (const b of bad) {
+    await a.choose(b);
+    expectTrue("refused " + JSON.stringify(b).slice(0, 50) + ": " + a.text(), /isn't a scorecard backup/.test(a.text()));
+    expectTrue("no Import button for it", a.$("#go").hidden);
+  }
+  // map images live in their own store, which this import doesn't bring over
+  await a.choose(backupOf([{ id: "c_map", data: { name: "Map Course", pars: [3], mapAssets: ["e".repeat(32)] } }], []));
+  expectTrue("map images are turned away too: " + a.text(), /map images/.test(a.text()) && a.$("#go").hidden);
+  expect("nothing sent", writesIn(a).length, 0);
+});
+
+check("An import cut off by a lapsed sign-in or a dropped signal can simply be run again", async () => {
+  const a = await openImport("seed=empty");
+  await a.choose(backupOf([heron], [rOne, rTwo]));
+  a.mock.setSignedOut("redirect");
+  await a.run();
+  expectTrue("it says to sign in: " + a.text(), /Signed out/.test(a.text()) && !a.$("#go").hidden);
+  a.mock.setSignedOut("");
+  a.mock.setFail(true);
+  await a.run();
+  expectTrue("it says the signal dropped: " + a.text(), /Couldn't reach the server/.test(a.text()) && !a.$("#go").hidden);
+  a.mock.setFail(false);
+  await a.run();
+  expect("course on the server", a.mock.peek("courses", "c_heron"), heron.data);
+  expect("rounds on the server", [a.mock.peek("rounds", "r_one"), a.mock.peek("rounds", "r_two")], [rOne.data, rTwo.data]);
+  expectTrue("all checked: " + a.text(), /All 3 match the file\./.test(a.text()));
+});
+
 /* ---------- runner ---------- */
 (async () => {
   const only = new URLSearchParams(location.search).get("only");
