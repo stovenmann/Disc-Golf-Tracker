@@ -44,8 +44,13 @@ one at the workers.dev address is the only one.
     where they go.
   - The app called that answer "no connection", which was wrong. A server that answers with a
     problem now shows "server problem — kept on this phone" and a banner with the server's own
-    words; a check covers it. This change is on `main`, waiting for Steve's word to publish.
-- Next: Steve adds the three settings in the right place, then finishes step 6.
+    words; a check covers it. Steve said to publish it, and it went live at `7c5e7b3`.
+  - The import form had set `main` as the production branch, with preview builds on for other
+    branches. So pushes to `main` were deploying, and the push to `live` failed as a preview
+    (`wrangler preview` wants a `previews` block this app doesn't use). Steve then set the
+    production branch to `live` and turned preview builds off (Settings → Build → Branch
+    control). Step 3 below now says to check that after the import.
+- Next: step 5, moving the data.
 
 ## Why
 
@@ -133,8 +138,9 @@ branch, at the same commit as `main`.
 3. **The app.** Workers & Pages → Create application → import a repository from GitHub. Let
    Cloudflare see `stovenmann/Disc-Golf-Tracker` if GitHub asks, and pick it.
    - Project name: `disc-golf`. Build command: empty. Deploy command: `npx wrangler deploy`.
-   - Production branch: `live`. If the form doesn't ask, set it afterwards in the Worker's
-     Settings → Build → Branch control.
+   - Production branch: `live`. The import form may quietly use `main`, so check afterwards in
+     the Worker's Settings → Build → Branch control: production branch `live`, and builds for
+     non-production branches off. Otherwise every push to `main` goes live.
    - Leave builds for other branches (previews) off.
    - Deploy. When the build is done, the Worker shows its address,
      `https://disc-golf.<something>.workers.dev`.
