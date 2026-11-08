@@ -34,7 +34,13 @@ one at the workers.dev address is the only one.
 - Part 1 is done (2026-11-08): the D1 database `disc-golf` and the R2 bucket `disc-golf-maps`
   exist, and the database id is in `wrangler.jsonc`.
 - The first publish is made: the `live` branch is at the same commit as `main`.
-- Next: part 2.
+- Part 2, steps 3 to 5 are done (2026-11-08): the Worker deploys from `live`, Access is on, and
+  the three sign-in settings are saved. From outside, every address on the site, the API
+  included, sends a stranger to the sign-in page, and a made-up sign-in token is turned away too.
+  (The address isn't written here: it contains Steve's email name, and this repo is public.)
+- Not yet seen: the app itself behind the sign-in, and whether the three settings reached it.
+  Step 6, on the iPhone, shows both.
+- Next: step 6.
 
 ## Why
 
