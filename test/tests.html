@@ -20,10 +20,17 @@
 <ol id="out"></ol>
 <div id="stage"></div>
 <script>
-  // load the checks fresh every time, so an edited tests.js is never served from cache
-  const s = document.createElement("script");
-  s.src = "tests.js?v=" + Date.now();
-  document.body.appendChild(s);
+  // load the checks fresh every time, so edited checks are never served from cache:
+  // the Worker's checks first, then the app's, which run both
+  const v = Date.now();
+  const load = (src) => new Promise((ok, bad) => {
+    const s = document.createElement("script");
+    s.src = src + "?v=" + v;
+    s.onload = ok;
+    s.onerror = () => bad(new Error("could not load " + src));
+    document.body.appendChild(s);
+  });
+  load("worker-tests.js").then(() => load("tests.js")).catch((e) => { document.getElementById("sum").textContent = e.message; });
 </script>
 </body>
 </html>

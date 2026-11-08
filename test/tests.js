@@ -274,7 +274,8 @@ check("The app starts outside claude.ai (no runtime at all)", async () => {
 /* ---------- runner ---------- */
 (async () => {
   const only = new URLSearchParams(location.search).get("only");
-  for (const c of checks) {
+  // the Cloudflare Worker's checks (worker-tests.js) run first; they need no app frame
+  for (const c of (window.workerChecks || []).concat(checks)) {
     if (only && !c.name.toLowerCase().includes(only.toLowerCase())) continue;
     try { localStorage.clear(); } catch (e) { /* no storage */ }
     let ok = true, msg = "";

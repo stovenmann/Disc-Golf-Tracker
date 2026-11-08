@@ -15,3 +15,7 @@ version = int(mock.stat().st_mtime)  # cache-buster, so an edited mock is always
 out = src.replace(marker, f'<script src="mock-claude.js?v={version}"></script>\n' + marker, 1)
 (root / "test" / "harness.html").write_text(out, encoding="utf-8", newline="\n")
 print("wrote test/harness.html")
+
+# the Cloudflare Worker, copied next to the checks so the browser can import it as it is
+(root / "test" / "worker.js").write_bytes((root / "worker" / "index.js").read_bytes())
+print("wrote test/worker.js")

@@ -1,0 +1,24 @@
+// Cloudflare's settings for the scorecard (see CLOUDFLARE.md). Cloudflare reads this file when it
+// deploys from the `live` branch; nothing on Steve's PC uses it.
+// The sign-in settings (ACCESS_TEAM_DOMAIN, ACCESS_AUD, ALLOWED_EMAILS) are set in the Cloudflare
+// dashboard, not here, so the email address stays out of this public repo. keep_vars stops a
+// deploy from wiping them.
+{
+  "name": "disc-golf",
+  "main": "worker/index.js",
+  "compatibility_date": "2026-10-01",
+  "keep_vars": true,
+  "workers_dev": true,
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"]
+  },
+  "d1_databases": [
+    // database_id comes from Steve's dashboard at step 4 of CLOUDFLARE.md
+    { "binding": "DB", "database_name": "disc-golf", "database_id": "set-at-step-4" }
+  ],
+  "r2_buckets": [
+    { "binding": "MAPS", "bucket_name": "disc-golf-maps" }
+  ]
+}

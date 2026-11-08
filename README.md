@@ -72,7 +72,15 @@ python -m http.server 8766 --bind 127.0.0.1 --directory test
 ```
 
 Then open http://127.0.0.1:8766/tests.html in a browser tab you can see: background tabs slow
-timers and throw the checks off. All 19 should pass. Add `?only=<words>` to run some of them.
+timers and throw the checks off. All 30 should pass:
+- 11 check the Cloudflare Worker (`worker/index.js`) that will serve the app (see `CLOUDFLARE.md`);
+- 19 check the app itself.
+
+Add `?only=<words>` to run some of them, for example `?only=Worker`.
+
+`make_harness.py` also copies the Worker to `test/worker.js`, so the browser can load it as it is.
+Its checks use an in-memory stand-in for Cloudflare's database and file storage, and sign-in
+tokens made with a throwaway key.
 
 The checks run the app against `test/mock-claude.js`, a stand-in for Claude's artifact runtime
 that follows its documented behaviour and can be made to fail saves on purpose. It is not the
@@ -90,6 +98,8 @@ To try the app by hand against made-up data, open `harness.html?seed=<name>`. Th
 | `test/mock-claude.js` | Stand-in for the artifact runtime's `db` and `assets` |
 | `test/make_harness.py` | Builds `test/harness.html`, the app with the stand-in loaded first |
 | `test/tests.html`, `test/tests.js` | The browser checks |
+| `worker/index.js`, `wrangler.jsonc` | The Cloudflare Worker and its settings (not deployed yet; see `CLOUDFLARE.md`) |
+| `test/worker-tests.js` | The Worker's checks |
 | `FINDINGS.md` | The bugs found in the first version, how each was reproduced, and how it was fixed |
 | `REDESIGN.md` | The agreed redesign (opponents, friends' history, the Clubhouse look) and its build order |
 | `CLOUDFLARE.md` | The approved plan to move the app from a Claude artifact to its own Cloudflare site |

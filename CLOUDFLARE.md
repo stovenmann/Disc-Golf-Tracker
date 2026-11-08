@@ -1,6 +1,14 @@
 # Moving the scorecard to Cloudflare
 
-Agreed with Steve on 2026-11-07, and the plan approved the same day. Step 1 is in progress.
+Agreed with Steve on 2026-11-07, and the plan approved the same day.
+
+**Where it stands.** Step 1 is done: `worker/index.js`, `wrangler.jsonc` and 11 checks in
+`test/worker-tests.js`, all passing alongside the app's 19. Two things can only be tried on
+Cloudflare itself, at step 4:
+- the SQL against a real D1 database (the checks use a stand-in);
+- a real Access sign-in token (the checks sign their own the same way).
+
+Next: step 2.
 
 ## Why
 
