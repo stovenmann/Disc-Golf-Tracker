@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Scorecard checks</title>
+<style>
+  body { font: 14px/1.4 system-ui, sans-serif; margin: 16px; background: #fff; color: #18231c; }
+  h1 { font-size: 18px; margin: 0 0 6px; }
+  #out { padding-left: 22px; max-width: 640px; }
+  #out li { margin: 5px 0; }
+  .pass { color: #1e6b43; }
+  .fail { color: #c23b3b; }
+  #stage { position: fixed; right: 12px; top: 12px; border: 1px solid #ccc; }
+  #stage iframe { display: block; border: 0; }
+</style>
+</head>
+<body>
+<h1>Scorecard checks</h1>
+<p id="sum">running…</p>
+<ol id="out"></ol>
+<div id="stage"></div>
+<script>
+  // load the checks fresh every time, so an edited tests.js is never served from cache
+  const s = document.createElement("script");
+  s.src = "tests.js?v=" + Date.now();
+  document.body.appendChild(s);
+</script>
+</body>
+</html>
