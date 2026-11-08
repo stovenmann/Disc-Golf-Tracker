@@ -16,7 +16,15 @@ function openApp(query) {
     f.width = 375;
     f.height = 667;
     f.src = "harness.html?" + query;
+    // Python's test server now and then resets a connection mid-page, and a half-loaded frame
+    // never fires onload: load it again rather than hang the whole run
+    let tries = 0;
+    const retry = setInterval(() => {
+      if (++tries > 3) { clearInterval(retry); return; }
+      f.src = "harness.html?" + query + "&reload=" + tries;
+    }, 10000);
     f.onload = async () => {
+      clearInterval(retry);
       const win = f.contentWindow, doc = f.contentDocument;
       for (let i = 0; i < 60 && !win.eval("state.loaded"); i++) await wait(50);
       await wait(250);
@@ -262,13 +270,65 @@ check("A viewer who can't write gets the view-only notice, not endless retries",
   expect("changes left queued on the device", localStorage.getItem("dg.outbox.v1"), null);
 });
 
-check("The app starts outside claude.ai (no runtime at all)", async () => {
+check("The app starts with no server to save to (a plain page)", async () => {
   const a = await openApp("nomock=1");
-  expect("runtime present", typeof a.win.claude, "undefined");
+  expect("API stand-in installed", a.mock.installed, false);
   expect("data status", a.js("state.dbStatus"), "local");
   expectTrue("no error toast, got: " + a.toast(), !/broke/i.test(a.toast()));
   a.click('[data-act="newround"]');
   expectTrue("setup screen shown", a.$('[data-act="startround"]'));
+});
+
+/* ---------- 8. on Cloudflare (CLOUDFLARE.md) ---------- */
+check("Signed out mid-round: scores stay on the phone and save after signing in", async () => {
+  const a = await openApp("seed=midround");
+  a.mock.setSignedOut("401");               // Cloudflare's sign-in has run out
+  a.click(plus(0));                         // hole 6: enter a 3; its save is refused
+  await wait(1200);
+  expect("score on screen", a.$("#sv-0").firstChild.textContent, "3");
+  expect("stored score while signed out", a.mock.peek("rounds", "r_mid").scores[0][5], null);
+  expectTrue("the top bar says signed out, got: " + a.$("#syncnote").textContent, /signed out/i.test(a.$("#syncnote").textContent));
+  expectTrue("a Sign in button is offered", a.$('[data-act="signin"]'));
+  a.mock.setSignedOut("");                  // signed in again
+  a.win.dispatchEvent(new a.win.Event("online"));
+  await wait(800);
+  expect("stored score once signed in", a.mock.peek("rounds", "r_mid").scores[0][5], 3);
+  expectTrue("the signed-out note is gone, got: " + a.$("#syncnote").textContent, !/signed out/i.test(a.$("#syncnote").textContent));
+});
+
+check("Cloudflare's redirect to its sign-in page counts as signed out, not as no signal", async () => {
+  const a = await openApp("seed=midround");
+  a.mock.setSignedOut("redirect");
+  a.click(plus(0));
+  await wait(1200);
+  expectTrue("the top bar says signed out, got: " + a.$("#syncnote").textContent, /signed out/i.test(a.$("#syncnote").textContent));
+  expect("stored score while signed out", a.mock.peek("rounds", "r_mid").scores[0][5], null);
+});
+
+check("Opened with no signal, the app still shows the round this phone last saw", async () => {
+  let a = await openApp("seed=midround");   // a normal visit keeps a copy on the phone
+  expect("hole shown on the first visit", a.holeShown(), "Hole 6");
+  a = await openApp("seed=midround&offline=1"); // reopened with no signal at all
+  expect("hole shown with no signal", a.holeShown(), "Hole 6");
+  expect("rounds on screen", a.js("state.rounds.length"), 1);
+});
+
+check("A copy kept from another server is never shown as current", async () => {
+  let a = await openApp("seed=maps");       // this phone keeps a copy with no rounds in it
+  expect("rounds on the first server", a.js("state.rounds.length"), 0);
+  a = await openApp("seed=midround");       // a different server (a recreated database) has one
+  expect("hole shown from the new server", a.holeShown(), "Hole 6");
+});
+
+check("Map images load from the scorecard's own address", async () => {
+  const a = await openApp("seed=maps");
+  a.click('[data-act="tab"][data-tab="courses"]');
+  a.click('[data-act="maps"]');
+  expect("map viewer image", a.$("#mapimg").getAttribute("src"), "/api/maps/" + "a".repeat(32));
+  a.click('#mapview [data-act="mapclose"]');
+  a.click('[data-act="editcourse"]');
+  expect("editor thumbnails", a.$$("#modal .mthumbrow img").map((i) => i.getAttribute("src")),
+    ["/api/maps/" + "a".repeat(32), "/api/maps/" + "b".repeat(32)]);
 });
 
 /* ---------- runner ---------- */

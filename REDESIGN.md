@@ -83,7 +83,9 @@ Data shape to settle in slice 2 (a sketch, not a decision):
 
 - Development needs only Python 3 and a browser. Nothing else is installed (no Node, no `gh`).
 - The live app is the private artifact https://claude.ai/artifact/BGtnTbuWtkc7EapWecrqLc.
-  - It is published from `index.html` and keeps its `db`, `assets` and `user` capabilities.
+  - It was last published from `index.html` at commit `f35161f` (version 10). It keeps its `db`,
+    `assets` and `user` capabilities, and the move to Cloudflare leaves it untouched.
+  - The app is now `public/index.html`, built for Cloudflare (see `CLOUDFLARE.md`).
   - Before republishing, confirm the live version still matches the last published commit.
 - Claude Code's browser pane isn't signed in to claude.ai, so a session can't view the live app or
   the canvas. The test harness in `test/` is where changes get checked.

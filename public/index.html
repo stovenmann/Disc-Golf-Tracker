@@ -202,6 +202,7 @@ h2 {
   color: var(--ink2);
   font-size: 13.5px;
 }
+.banner .btn { flex: none; white-space: nowrap; }
 .card {
   background: var(--surface);
   border: 1px solid var(--line);
@@ -775,14 +776,7 @@ const state = {
 let DB = null;
 let ASSETS = null;
 let shownHole = null;     // round and hole on screen at the last render
-(async function initAssets() {
-  try {
-    if (window.claude && typeof window.claude.use === "function") {
-      ASSETS = await window.claude.use("assets");
-      if (state.tab === "courses") render();
-    }
-  } catch (e) { /* uploads unavailable; viewer still works for saved maps */ }
-})();
+let signedOut = false;    // Cloudflare's sign-in has lapsed: changes wait on this phone until it's back
 
 /* ================= utils ================= */
 const $ = (s, el) => (el || document).querySelector(s);
@@ -985,10 +979,11 @@ function writeFailed(key, e) {
   }
   if (code === "quota_exceeded") { toast("Saved data is full — delete some old rounds so new ones can save."); return; }
   // anything else is treated as a dropped connection: keep the change and try again
+  // (signed out counts here too: the change is kept, and setSignedOut has already said so)
   if (!syncTrouble) {
     syncTrouble = true;
     renderSync();
-    toast("No connection — scores are kept on this phone and save when you're back online.");
+    if (code !== "signed_out") toast("No connection — scores are kept on this phone and save when you're back online.");
   }
   const n = retryCount[key] = (retryCount[key] || 0) + 1;
   const delay = Math.min(30000, 2000 * Math.pow(2, n - 1)) * (0.85 + Math.random() * 0.3);
@@ -1071,13 +1066,162 @@ function tryAutoResume() {
 }
 tryAutoResume();
 
+/* ================= the scorecard's server =================
+   The page is served by the Cloudflare Worker in worker/index.js, behind Cloudflare's sign-in.
+   makeCloud() gives the rest of the app the same small interface it had as a Claude artifact:
+   db.doc("rounds/<id>").set(data) / .delete(), db.collection(kind).onSnapshot(next, error),
+   assets.upload(file) / .delete(id). Underneath:
+   - Each collection is fetched when the app opens, when it comes back to the front, every 30
+     seconds while open, and after each save. An unchanged collection costs a 304 and nothing more.
+   - The last copy of each collection is kept on the phone. Opened with no signal, the app starts
+     from it, like the artifact's cache did.
+   - A lapsed sign-in (a 401, or Cloudflare's redirect to its sign-in page) is not lost data: it
+     sets signedOut, the outbox keeps every change, and they are sent once sign-in is back. */
+const API = "/api";
+const CACHE_KEY = "dg.cache.v1";
+const POLL_MS = 30000;
+const mapSrc = (id) => API + "/maps/" + encodeURIComponent(id);
+function signedOutResponse(res) {
+  return res.type === "opaqueredirect" || res.status === 401 || res.status === 403 ||
+    (res.status >= 300 && res.status < 400 && res.status !== 304);
+}
+function setSignedOut(v) {
+  if (signedOut === v) return;
+  signedOut = v;
+  if (v) toast("Signed out. Scores are kept on this phone and save once you sign in again.");
+  render();
+  if (!v) flushAll(); // signed back in: send what waited
+}
+function makeCloud() {
+  const listeners = {}, docsOf = {}, etags = {}, definitive = {}, pulling = {}, again = {};
+  try {
+    const kept = JSON.parse(localStorage.getItem(CACHE_KEY) || "{}") || {};
+    Object.keys(kept).forEach(k => {
+      if (kept[k] && Array.isArray(kept[k].docs)) { docsOf[k] = kept[k].docs; etags[k] = kept[k].etag || null; }
+    });
+  } catch (e) { /* nothing kept, or storage blocked */ }
+  function keep() {
+    try {
+      const out = {};
+      Object.keys(docsOf).forEach(k => { out[k] = { etag: etags[k], docs: docsOf[k] }; });
+      localStorage.setItem(CACHE_KEY, JSON.stringify(out));
+    } catch (e) {
+      try { localStorage.removeItem(CACHE_KEY); } catch (e2) { /* storage blocked */ }
+    }
+  }
+  function snap(kind, fromCache) {
+    const docs = (docsOf[kind] || []).map(d => ({ id: d.id, exists: true, data: () => d.data }));
+    return { docs, size: docs.length, empty: !docs.length, metadata: { fromCache, hasPendingWrites: false } };
+  }
+  const emit = (kind) => (listeners[kind] || []).forEach(l => l.next(snap(kind, false)));
+  const failed = (kind) => (listeners[kind] || []).forEach(l => { if (l.err) l.err(); });
+  async function pull(kind) {
+    if (!listeners[kind]) return;
+    if (pulling[kind]) { again[kind] = true; return; } // one at a time; the latest ask runs after
+    pulling[kind] = true;
+    try {
+      const headers = { accept: "application/json" };
+      if (docsOf[kind] && etags[kind]) headers["if-none-match"] = etags[kind];
+      const res = await fetch(API + "/docs/" + kind, { headers, redirect: "manual", cache: "no-store" });
+      if (signedOutResponse(res)) { setSignedOut(true); failed(kind); }
+      else if (res.status === 304) {
+        setSignedOut(false);
+        if (!definitive[kind]) { definitive[kind] = true; emit(kind); } // the kept copy is current
+      } else if (res.ok) {
+        const body = await res.json();
+        setSignedOut(false);
+        docsOf[kind] = Array.isArray(body.docs) ? body.docs : [];
+        etags[kind] = res.headers.get("etag");
+        definitive[kind] = true;
+        keep();
+        emit(kind);
+      } else failed(kind);
+    } catch (e) {
+      failed(kind); // no connection: try again on the next round
+    }
+    pulling[kind] = false;
+    if (again[kind]) { again[kind] = false; pull(kind); }
+  }
+  const pullAll = () => Object.keys(listeners).forEach(pull);
+  const soon = (kind) => setTimeout(() => pull(kind), 0);
+  let polling = false;
+  function startPolling() {
+    if (polling) return;
+    polling = true;
+    setInterval(() => { if (document.visibilityState !== "hidden") pullAll(); }, POLL_MS);
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") pullAll(); });
+    window.addEventListener("online", pullAll);
+  }
+  async function send(method, path, body, type) {
+    let res;
+    try {
+      res = await fetch(API + path, { method, body, headers: type ? { "content-type": type } : undefined, redirect: "manual" });
+    } catch (e) {
+      throw { code: "unavailable", message: "No connection." };
+    }
+    if (signedOutResponse(res)) { setSignedOut(true); throw { code: "signed_out", message: "Signed out." }; }
+    let out = null;
+    try { out = await res.json(); } catch (e) { out = null; }
+    if (!res.ok) throw { code: (out && out.code) || "http_" + res.status, message: (out && out.message) || "" };
+    setSignedOut(false);
+    return out;
+  }
+  const db = {
+    doc(path) {
+      const i = path.indexOf("/"), kind = path.slice(0, i), at = "/docs/" + kind + "/" + encodeURIComponent(path.slice(i + 1));
+      return {
+        set: (data) => send("PUT", at, JSON.stringify(data), "application/json").then(() => { soon(kind); }),
+        delete: () => send("DELETE", at).then(() => { soon(kind); }),
+      };
+    },
+    collection(kind) {
+      return {
+        onSnapshot(next, err) {
+          const l = { next, err };
+          (listeners[kind] = listeners[kind] || []).push(l);
+          if (docsOf[kind]) setTimeout(() => { if (!definitive[kind]) next(snap(kind, true)); }, 0);
+          soon(kind);
+          startPolling();
+          return () => { listeners[kind] = listeners[kind].filter(x => x !== l); };
+        },
+      };
+    },
+  };
+  const assets = {
+    upload: (file) => send("POST", "/maps", file, file.type || "application/octet-stream"),
+    delete: (id) => send("DELETE", "/maps/" + encodeURIComponent(id)),
+  };
+  return { db, assets, hasCache: () => Object.keys(docsOf).length > 0 };
+}
+/* Find out whether this page has its server. On a phone that has used it before, start straight
+   from the kept copy (no signal on the course is normal). Otherwise ask once, and keep asking
+   while there's no connection. A plain web server with no API (a test page, a saved file) means
+   there's nowhere to save: keep score anyway. */
+async function connect() {
+  if (!/^https?:$/.test(location.protocol)) return null;
+  const cloud = makeCloud();
+  if (cloud.hasCache()) return cloud;
+  for (let wait = 1500; ; wait = Math.min(wait * 2, 15000)) {
+    try {
+      const res = await fetch(API + "/docs/courses", { headers: { accept: "application/json" }, redirect: "manual", cache: "no-store" });
+      if (signedOutResponse(res)) { setSignedOut(true); return cloud; }
+      return /json/.test(res.headers.get("content-type") || "") ? cloud : null;
+    } catch (e) {
+      await new Promise(r => setTimeout(r, wait));
+    }
+  }
+}
+const cloudReady = connect();
+(async function initAssets() {
+  const cloud = await cloudReady;
+  if (cloud) { ASSETS = cloud.assets; if (state.tab === "courses") render(); }
+})();
+
 (async function initDb() {
   try {
-    if (!(window.claude && typeof window.claude.use === "function")) {
-      state.dbStatus = "local"; state.loaded = true; render(); return;
-    }
-    const db = await window.claude.use("db");
-    if (!db) { state.dbStatus = "local"; state.loaded = true; render(); return; }
+    const cloud = await cloudReady;
+    if (!cloud) { state.dbStatus = "local"; state.loaded = true; render(); return; }
+    const db = cloud.db;
     DB = db;
     state.dbStatus = "connected";
     flushAll(); // anything queued before the db answered, or left from an earlier visit
@@ -1148,12 +1292,14 @@ function renderSync() {
   n.className = "topnote" + (state.dbStatus === "connecting" ? " wait" : ""); // "connecting…" only if it takes a while
   if (state.dbStatus === "local") n.textContent = "offline — not saved";
   else if (state.readOnly) n.textContent = "view only";
+  else if (signedOut) n.textContent = "signed out — kept on this phone";
   else if (syncTrouble && Object.keys(outbox).length) n.textContent = "no connection — kept on this phone";
   else if (state.dbStatus === "connecting") n.textContent = "connecting…";
   else n.textContent = "";
 }
 function banner() {
-  if (state.dbStatus === "local") return `<div class="banner">Couldn't reach saved data — you can still keep score, but this round won't be saved. Reopen from your Claude account to sync.</div>`;
+  if (state.dbStatus === "local") return `<div class="banner">This copy isn't connected to the scorecard's server. You can keep score, but nothing is saved.</div>`;
+  if (signedOut) return `<div class="banner spread"><span>Signed out. Your scores are safe on this phone until you sign in.</span><button class="btn small primary" data-act="signin">Sign in</button></div>`;
   if (state.readOnly) return `<div class="banner">View-only access: you can browse rounds and stats, but changes won't save.</div>`;
   return "";
 }
@@ -1307,7 +1453,7 @@ function courseEditorHTML(c) {
   </div>
   <div class="field"><label>Map images <span class="tiny">(pop up in-app, mid-round)</span></label>
     ${(c.mapAssets || []).length ? `<div class="mthumbrow">
-      ${c.mapAssets.map((a, i) => `<span class="mt"><img src="/_blob/${esc(a)}" alt="Map ${i + 1}"><button class="rm" data-act="rmmap" data-i="${i}" aria-label="Remove map image ${i + 1}">${icon("close", 14, 2)}</button></span>`).join("")}
+      ${c.mapAssets.map((a, i) => `<span class="mt"><img src="${esc(mapSrc(a))}" alt="Map ${i + 1}"><button class="rm" data-act="rmmap" data-i="${i}" aria-label="Remove map image ${i + 1}">${icon("close", 14, 2)}</button></span>`).join("")}
     </div>` : ""}
     ${ASSETS ? `<button class="btn small" data-act="mapadd" data-target="editor" style="margin-top:8px">${icon("addimg", 16)}Add map image</button>` : `<p class="tiny" style="margin:6px 0 0">Image upload isn't available in this view.</p>`}
   </div>
@@ -1507,11 +1653,11 @@ function renderMapView() {
   let body;
   if (assets.length) {
     mv.idx = Math.min(mv.idx, assets.length - 1);
-    body = `<div class="mapstage" id="mapstage"><img id="mapimg" src="/_blob/${esc(assets[mv.idx])}" alt="Course map" draggable="false"></div>
+    body = `<div class="mapstage" id="mapstage"><img id="mapimg" src="${esc(mapSrc(assets[mv.idx]))}" alt="Course map" draggable="false"></div>
     <div class="mapfoot">
       <button class="zbtn" data-act="mapzoom" data-d="-1" aria-label="Zoom out">${icon("minus", 20, 1.8)}</button>
       <button class="zbtn" data-act="mapzoom" data-d="1" aria-label="Zoom in">${icon("plus", 20, 1.8)}</button>
-      ${assets.map((a, i) => `<button class="mthumb ${i === mv.idx ? "on" : ""}" data-act="mapgo" data-i="${i}" aria-label="Map ${i + 1}"><img src="/_blob/${esc(a)}" alt=""></button>`).join("")}
+      ${assets.map((a, i) => `<button class="mthumb ${i === mv.idx ? "on" : ""}" data-act="mapgo" data-i="${i}" aria-label="Map ${i + 1}"><img src="${esc(mapSrc(a))}" alt=""></button>`).join("")}
       ${ASSETS && course ? `<button class="zbtn" data-act="mapadd" data-target="viewer" aria-label="Add map image">${icon("addimg", 20)}</button>` : ""}
     </div>`;
   } else {
@@ -1765,7 +1911,9 @@ function finishRound(id) {
   if (DB && !state.readOnly) {
     whenSynced("rounds/" + r.id).then(ok => toast(ok
       ? "Round saved." + winnerLine
-      : "Round finished." + winnerLine + " No connection — it saves when you're back online."));
+      : "Round finished." + winnerLine + (signedOut
+        ? " Signed out — it saves once you sign in again."
+        : " No connection — it saves when you're back online.")));
   } else {
     toast("Round finished." + winnerLine);
   }
@@ -1925,6 +2073,8 @@ document.addEventListener("click", (e) => {
     case "dodelcourse": closeModal(); deleteDoc("courses", id); break;
     case "statsplayer": state.statsPlayer = el.getAttribute("data-p"); render(); break;
     case "settings": openModal(settingsHTML()); break;
+    // reloading takes Cloudflare's sign-in page; every waiting change is in the outbox and comes back after
+    case "signin": location.reload(); break;
     case "setlook": {
       const look = el.getAttribute("data-look");
       setLook(look);

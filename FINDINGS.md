@@ -1,5 +1,9 @@
 # Disc Golf Scorecard: investigation and fixes, 2026-11-07
 
+> Later note (2026-11-07): the app has since moved to `public/index.html`, and the checks now run
+> against `test/mock-api.js`, a stand-in for the Cloudflare API (see `CLOUDFLARE.md`). This
+> record describes the artifact version as it was investigated.
+
 Source: the "Disc Golf Scorecard" artifact (https://claude.ai/artifact/BGtnTbuWtkc7EapWecrqLc),
 version 1794074449-5b1b, copied unmodified to `index.html` (baseline commit `67fcbcb`).
 It is one HTML file that uses the artifact runtime's `db` (courses, rounds) and `assets` (map images).

@@ -2,13 +2,22 @@
 
 Agreed with Steve on 2026-11-07, and the plan approved the same day.
 
-**Where it stands.** Step 1 is done: `worker/index.js`, `wrangler.jsonc` and 11 checks in
-`test/worker-tests.js`, all passing alongside the app's 19. Two things can only be tried on
-Cloudflare itself, at step 4:
+**Where it stands.** Steps 1 and 2 are done; all 36 checks pass.
+- **Step 1:** the Worker (`worker/index.js`), its settings (`wrangler.jsonc`) and 12 checks.
+- **Step 2:** the page (now `public/index.html`) saves through the Worker's API.
+  - It keeps the last copy on the phone, so it opens with no signal.
+  - It treats a lapsed sign-in like a dropped signal: nothing is lost, and the Sign in button
+    brings back Cloudflare's sign-in page.
+  - The checks run it against `test/mock-api.js`, a stand-in for the API.
+  - Step 2 found one real bug. A phone's kept copy from one database could have passed for current
+    on a recreated database, because both counted versions from zero. Each database now has a
+    random tag in its ETag, and two new checks cover it.
+
+Two things can only be tried on Cloudflare itself, at step 4:
 - the SQL against a real D1 database (the checks use a stand-in);
 - a real Access sign-in token (the checks sign their own the same way).
 
-Next: step 2.
+Next: step 3.
 
 ## Why
 

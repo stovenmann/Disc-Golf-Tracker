@@ -3,8 +3,11 @@
 A phone-first disc golf scorecard. It keeps score hole by hole for up to six players, remembers
 your courses and their pars, shows course maps mid-round, and tracks your scores over time.
 
-It is one HTML file (`index.html`) built to run as a [Claude](https://claude.ai) artifact, which
-gives it somewhere to save rounds, courses and map images.
+The app is one HTML file (`public/index.html`). It is moving from a [Claude](https://claude.ai)
+artifact to its own Cloudflare site (see `CLOUDFLARE.md`):
+- **Today** the live app is still the Claude artifact, published from commit `f35161f`.
+- **This repo's `main`** is built for Cloudflare: the page saves through the Worker in
+  `worker/index.js`. It isn't deployed yet.
 
 ## What it does
 
@@ -37,30 +40,41 @@ storage, and doesn't touch saved rounds or courses. The course map viewer is alw
 
 The page carries a Home Screen icon for iPhone: a cream disc golf basket with brass chains on
 bottle green, labelled "Disc Golf". `design/app-icon.ps1` draws it (Windows PowerShell, nothing
-to install), and `python design/embed_icon.py` writes it into `index.html` as an
-`apple-touch-icon`. The image is embedded because the artifact can't serve separate files.
+to install), and `python design/embed_icon.py` writes it into `public/index.html` as an
+`apple-touch-icon`.
 
 ## Saving, and playing without signal
 
-In a Claude artifact, rounds and courses are saved to the artifact's database and map images to
-its file storage. They are shared by everyone who can open the artifact.
+On Cloudflare, rounds and courses are saved in a Cloudflare database and map images in
+Cloudflare's file storage, behind a sign-in that only lets Steve in. The page picks up changes:
+- when it opens;
+- when it comes back to the front;
+- every 30 seconds while it's open;
+- after each save.
+
+It keeps the last copy on the phone, so it opens mid-round even with no signal.
 
 Each change is first kept on the phone, then sent. If the connection drops mid-round:
 - scores stay on screen;
 - the top bar says "no connection — kept on this phone";
 - saves retry on their own, and straight away when signal returns or the app is reopened.
 
+If Cloudflare's sign-in runs out mid-round, it's the same: the scores stay on the phone, and the
+top bar says "signed out — kept on this phone". A Sign in button brings back the sign-in page, and
+everything waiting is sent once you're signed in.
+
 Scores that never got sent are restored the next time the app opens. "Round saved" appears only
 once the round is actually saved.
 
-Opened as a plain file in a browser, outside Claude, the app still runs and keeps score, but
-it says it can't save.
+Opened somewhere with no server behind it (a saved copy of the page), the app still runs and
+keeps score, but it says it can't save.
 
 ## Running it
 
-Publish `index.html` as a Claude artifact with the `db` capability (rounds and courses) and the
-`assets` capability (map images). Without `assets`, map uploads are hidden and everything else
-works.
+Cloudflare deploys the Worker and `public/` from this repo's `live` branch. `CLOUDFLARE.md` has
+the one-time setup and the order of the remaining steps. Until then, the live app is the Claude
+artifact. It was published from `index.html` at commit `f35161f`, with the `db` and `assets`
+capabilities.
 
 ## Testing
 
@@ -72,9 +86,9 @@ python -m http.server 8766 --bind 127.0.0.1 --directory test
 ```
 
 Then open http://127.0.0.1:8766/tests.html in a browser tab you can see: background tabs slow
-timers and throw the checks off. All 30 should pass:
-- 11 check the Cloudflare Worker (`worker/index.js`) that will serve the app (see `CLOUDFLARE.md`);
-- 19 check the app itself.
+timers and throw the checks off. All 36 should pass:
+- 12 check the Cloudflare Worker (`worker/index.js`) that will serve the app (see `CLOUDFLARE.md`);
+- 24 check the app itself.
 
 Add `?only=<words>` to run some of them, for example `?only=Worker`.
 
@@ -82,20 +96,24 @@ Add `?only=<words>` to run some of them, for example `?only=Worker`.
 Its checks use an in-memory stand-in for Cloudflare's database and file storage, and sign-in
 tokens made with a throwaway key.
 
-The checks run the app against `test/mock-claude.js`, a stand-in for Claude's artifact runtime
-that follows its documented behaviour and can be made to fail saves on purpose. It is not the
-real thing: try changes in the real artifact before relying on them on the course.
+The checks run the app against `test/mock-api.js`, a stand-in for the Worker's API. It answers
+as the Worker does and can be made to fail on purpose. It is not the real thing: try changes on
+the real site before relying on them on the course.
 
 To try the app by hand against made-up data, open `harness.html?seed=<name>`. The seeds are
-`empty`, `maps`, `midround`, `six` and `partial`. Add `&fail=1` to make every save fail.
-`test/mock-claude.js` lists the other options.
+`empty`, `maps`, `midround`, `six` and `partial`. Options:
+- `&fail=1` makes every save fail;
+- `&offline=1` makes everything fail;
+- `&signedout=401` or `&signedout=redirect` acts as if the sign-in had run out.
+
+`test/mock-api.js` lists the rest.
 
 ## What's here
 
 | Path | What it is |
 |---|---|
-| `index.html` | The whole app: markup, styles and script |
-| `test/mock-claude.js` | Stand-in for the artifact runtime's `db` and `assets` |
+| `public/index.html` | The whole app: markup, styles and script |
+| `test/mock-api.js` | Stand-in for the Worker's API, for the checks |
 | `test/make_harness.py` | Builds `test/harness.html`, the app with the stand-in loaded first |
 | `test/tests.html`, `test/tests.js` | The browser checks |
 | `worker/index.js`, `wrangler.jsonc` | The Cloudflare Worker and its settings (not deployed yet; see `CLOUDFLARE.md`) |
@@ -105,4 +123,4 @@ To try the app by hand against made-up data, open `harness.html?seed=<name>`. Th
 | `CLOUDFLARE.md` | The approved plan to move the app from a Claude artifact to its own Cloudflare site |
 | `design/canvas/` | Source of the redesign mock-ups, for reference |
 | `design/app-icon.png`, `app-icon-180.png` | The Home Screen icon, full size and at iPhone size |
-| `design/app-icon.ps1`, `embed_icon.py` | Draw the icon; put it into `index.html` |
+| `design/app-icon.ps1`, `embed_icon.py` | Draw the icon; put it into `public/index.html` |

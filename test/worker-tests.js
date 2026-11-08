@@ -61,6 +61,7 @@
     const key = (c, id) => c + "\u0000" + id;
     const run = (sql, a) => {
       if (W.SQL.init.indexOf(sql) >= 0) return { results: [] };
+      if (sql === W.SQL.epoch) { if (!meta.has("#epoch")) meta.set("#epoch", a[0]); return { results: [] }; }
       if (sql === W.SQL.version) return { results: meta.has(a[0]) ? [{ version: meta.get(a[0]) }] : [] };
       if (sql === W.SQL.list) {
         const rows = [];
@@ -224,6 +225,17 @@
     const tag2 = after.res.headers.get("etag");
     await t.call("DELETE", "/api/docs/rounds/r_one");
     same("after a delete", (await t.call("GET", "/api/docs/rounds", { headers: { "if-none-match": tag2 } })).status, 200);
+  });
+
+  check("a phone's copy from another database is never taken as current", async () => {
+    const one = await setup(), two = await setup(); // e.g. the database recreated from scratch
+    await one.call("PUT", "/api/docs/rounds/r_one", putJSON(sampleRound));
+    await two.call("PUT", "/api/docs/rounds/r_other", putJSON(sampleRound));
+    const tagOne = (await one.call("GET", "/api/docs/rounds")).res.headers.get("etag");
+    const fromTwo = await two.call("GET", "/api/docs/rounds", { headers: { "if-none-match": tagOne } });
+    same("same version number, different database", [fromTwo.status, fromTwo.body.docs[0].id], [200, "r_other"]);
+    const tagAgain = (await one.call("GET", "/api/docs/rounds")).res.headers.get("etag");
+    same("a database keeps its own tag between calls", tagAgain, tagOne);
   });
 
   check("map images upload, load and delete", async () => {

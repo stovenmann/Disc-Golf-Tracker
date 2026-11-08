@@ -32,6 +32,9 @@ export const SQL = {
     "CREATE TABLE IF NOT EXISTS docs (collection TEXT NOT NULL, id TEXT NOT NULL, data TEXT NOT NULL, updated_at INTEGER NOT NULL, PRIMARY KEY (collection, id))",
     "CREATE TABLE IF NOT EXISTS meta (collection TEXT PRIMARY KEY, version INTEGER NOT NULL)",
   ],
+  // a random number made once per database, part of every ETag, so a phone's kept copy from one
+  // database can never pass for current on another (a recreated database restarts its versions)
+  epoch: "INSERT OR IGNORE INTO meta (collection, version) VALUES ('#epoch', ?1)",
   version: "SELECT version FROM meta WHERE collection = ?1",
   list: "SELECT id, data FROM docs WHERE collection = ?1 ORDER BY id",
   save: "INSERT INTO docs (collection, id, data, updated_at) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (collection, id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at",
@@ -167,22 +170,24 @@ async function api(request, env, url, d) {
 const ready_ = new WeakSet();
 async function ready(db) {
   if (ready_.has(db)) return;
-  await db.batch(SQL.init.map((s) => db.prepare(s)));
+  const epoch = Math.floor(Math.random() * 2 ** 48) + 1;
+  await db.batch(SQL.init.map((s) => db.prepare(s)).concat([db.prepare(SQL.epoch).bind(epoch)]));
   ready_.add(db);
 }
-const etagOf = (v) => '"v' + v + '"';
+const first = (res) => (res && res.results && res.results[0] ? res.results[0].version : 0);
+const etagOf = (epoch, v) => '"' + epoch + "-v" + v + '"';
 
 async function listDocs(request, env, coll) {
-  const row = await env.DB.prepare(SQL.version).bind(coll).first();
-  const known = etagOf(row ? row.version : 0);
+  const stamp = () => [env.DB.prepare(SQL.version).bind("#epoch"), env.DB.prepare(SQL.version).bind(coll)];
+  const [e0, v0] = await env.DB.batch(stamp());
+  const known = etagOf(first(e0), first(v0));
   if (request.headers.get("if-none-match") === known) {
     return new Response(null, { status: 304, headers: { etag: known, "cache-control": "no-store" } });
   }
   // the version and the documents are read together, so the ETag matches what is sent
-  const [v, list] = await env.DB.batch([env.DB.prepare(SQL.version).bind(coll), env.DB.prepare(SQL.list).bind(coll)]);
-  const version = v.results && v.results[0] ? v.results[0].version : 0;
+  const [e, v, list] = await env.DB.batch(stamp().concat([env.DB.prepare(SQL.list).bind(coll)]));
   const docs = (list.results || []).map((r) => ({ id: r.id, data: JSON.parse(r.data) }));
-  return json(200, { docs, version }, { etag: etagOf(version) });
+  return json(200, { docs, version: first(v) }, { etag: etagOf(first(e), first(v)) });
 }
 
 async function saveDoc(request, env, coll, id, d) {
