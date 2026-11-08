@@ -29,8 +29,12 @@ If the Home Screen shows a letter or a screenshot instead of the basket, iOS fet
 without the sign-in cookie. The fix is an Access rule that lets anyone fetch `/icons/*` and
 `/manifest.webmanifest`, which hold nothing private.
 
-Next: step 4. The setup steps are below, and `wrangler.jsonc` turns off preview copies, so the
+Now: step 4. The setup steps are below, and `wrangler.jsonc` turns off preview copies, so the
 one at the workers.dev address is the only one.
+- Part 1 is done (2026-11-08): the D1 database `disc-golf` and the R2 bucket `disc-golf-maps`
+  exist, and the database id is in `wrangler.jsonc`.
+- The first publish is made: the `live` branch is at the same commit as `main`.
+- Next: part 2.
 
 ## Why
 

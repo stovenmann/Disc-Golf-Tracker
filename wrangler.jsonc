@@ -17,8 +17,8 @@
     "run_worker_first": ["/api/*"]
   },
   "d1_databases": [
-    // database_id comes from Steve's dashboard at step 4 of CLOUDFLARE.md
-    { "binding": "DB", "database_name": "disc-golf", "database_id": "set-at-step-4" }
+    // created by Steve in the dashboard at step 4 of CLOUDFLARE.md; the id isn't a secret
+    { "binding": "DB", "database_name": "disc-golf", "database_id": "c7813714-5d10-4df8-a6d6-4e9046ad6de6" }
   ],
   "r2_buckets": [
     { "binding": "MAPS", "bucket_name": "disc-golf-maps" }
