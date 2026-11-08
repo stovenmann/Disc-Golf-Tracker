@@ -5,3 +5,6 @@ test/icons/
 
 # the old Claude artifact's data, exported for the one-time move to Cloudflare: never committed
 export/
+
+# course map images Claude prepares from Steve's PDFs and links, for him to add in the app: never committed
+maps/
