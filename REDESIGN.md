@@ -61,6 +61,9 @@ Each slice:
      hole buttons. The canvas puts all three behind a "…" menu. Keeping them one tap away
      left every behaviour and check unchanged; the menu can follow if Steve wants it.
    - The course map viewer keeps a dark background in both looks, so maps read well.
+   **Then, before slice 2: move the app to Cloudflare** (decided 2026-11-07). It gets its own
+   address, the Home Screen icon and full screen. The plan and its build order are in
+   `CLOUDFLARE.md`. Slices 2 to 4 are built on Cloudflare.
 2. **Player roster.** Add a `players` collection. Match the names in existing rounds to roster
    entries, case-insensitively ("steven" and "Steven" are one person). Keep the original names on
    every round, so the change only adds. Export a copy of the saved data before it runs on the

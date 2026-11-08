@@ -92,6 +92,7 @@ To try the app by hand against made-up data, open `harness.html?seed=<name>`. Th
 | `test/tests.html`, `test/tests.js` | The browser checks |
 | `FINDINGS.md` | The bugs found in the first version, how each was reproduced, and how it was fixed |
 | `REDESIGN.md` | The agreed redesign (opponents, friends' history, the Clubhouse look) and its build order |
+| `CLOUDFLARE.md` | The approved plan to move the app from a Claude artifact to its own Cloudflare site |
 | `design/canvas/` | Source of the redesign mock-ups, for reference |
 | `design/app-icon.png`, `app-icon-180.png` | The Home Screen icon, full size and at iPhone size |
 | `design/app-icon.ps1`, `embed_icon.py` | Draw the icon; put it into `index.html` |
